@@ -2,16 +2,33 @@ const User = require("../models/User");
 const Role = require("../models/Role");
 
 const { generateAccessToken } = require("../utils/auth");
-const { USER_STATUS } = require("../config/constants");
+const { ROLES, USER_STATUS } = require("../config/constants");
 
-const registerUser = async ({
-  firstName,
-  lastName,
-  email,
-  phone,
-  password,
-  roleId
-}) => {
+/*
+|--------------------------------------------------------------------------
+| Helper: Find Role
+|--------------------------------------------------------------------------
+*/
+
+const getRoleById = async (roleId) => {
+  const role = await Role.findById(roleId);
+
+  if (!role) {
+    const error = new Error("Invalid role");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return role;
+};
+
+/*
+|--------------------------------------------------------------------------
+| Helper: Check Duplicate User
+|--------------------------------------------------------------------------
+*/
+
+const ensureUserDoesNotExist = async (email, phone) => {
   const existingEmail = await User.findOne({
     email: email.toLowerCase()
   });
@@ -29,14 +46,44 @@ const registerUser = async ({
     error.statusCode = 409;
     throw error;
   }
+};
 
-  const role = await Role.findById(roleId);
+/*
+|--------------------------------------------------------------------------
+| Public Registration
+|
+| Allowed:
+| - FARMER
+| - CONSUMER
+|--------------------------------------------------------------------------
+*/
 
-  if (!role) {
-    const error = new Error("Invalid role");
-    error.statusCode = 400;
+const registerUser = async ({
+  firstName,
+  lastName,
+  email,
+  phone,
+  password,
+  roleId
+}) => {
+  const role = await getRoleById(roleId);
+
+  const allowedPublicRoles = [
+    ROLES.FARMER,
+    ROLES.CONSUMER
+  ];
+
+  if (!allowedPublicRoles.includes(role.name)) {
+    const error = new Error(
+      "Public registration is only available for FARMER and CONSUMER roles"
+    );
+
+    error.statusCode = 403;
+
     throw error;
   }
+
+  await ensureUserDoesNotExist(email, phone);
 
   const passwordHash = await User.hashPassword(password);
 
@@ -46,7 +93,7 @@ const registerUser = async ({
     email: email.toLowerCase(),
     phone,
     passwordHash,
-    roleId,
+    roleId: role._id,
     status: USER_STATUS.ACTIVE
   });
 
@@ -60,11 +107,84 @@ const registerUser = async ({
       email: user.email,
       phone: user.phone,
       roleId: user.roleId,
+      role: role.name,
       status: user.status
     },
     token
   };
 };
+
+/*
+|--------------------------------------------------------------------------
+| Admin Onboarding
+|
+| Admin can create:
+| - BULK_BUYER
+| - FPO
+| - LOGISTICS
+| - GOVERNMENT_OFFICER
+|
+|--------------------------------------------------------------------------
+*/
+
+const adminCreateUser = async ({
+  firstName,
+  lastName,
+  email,
+  phone,
+  password,
+  roleId
+}) => {
+  const role = await getRoleById(roleId);
+
+  const allowedAdminRoles = [
+    ROLES.BULK_BUYER,
+    ROLES.FPO,
+    ROLES.LOGISTICS,
+    ROLES.GOVERNMENT_OFFICER
+  ];
+
+  if (!allowedAdminRoles.includes(role.name)) {
+    const error = new Error(
+      "This role cannot be created through admin onboarding"
+    );
+
+    error.statusCode = 400;
+
+    throw error;
+  }
+
+  await ensureUserDoesNotExist(email, phone);
+
+  const passwordHash = await User.hashPassword(password);
+
+  const user = await User.create({
+    firstName,
+    lastName,
+    email: email.toLowerCase(),
+    phone,
+    passwordHash,
+    roleId: role._id,
+    status: USER_STATUS.ACTIVE
+  });
+
+  return {
+    id: user._id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    email: user.email,
+    phone: user.phone,
+    roleId: user.roleId,
+    role: role.name,
+    status: user.status
+  };
+};
+
+/*
+|--------------------------------------------------------------------------
+| Login
+|--------------------------------------------------------------------------
+*/
 
 const loginUser = async ({ email, password }) => {
   const user = await User.findOne({
@@ -92,9 +212,8 @@ const loginUser = async ({ email, password }) => {
   }
 
   user.lastLoginAt = new Date();
-  await user.save();
 
-  const token = generateAccessToken(user);
+  await user.save();
 
   await user.populate({
     path: "roleId",
@@ -103,6 +222,8 @@ const loginUser = async ({ email, password }) => {
     }
   });
 
+  const token = generateAccessToken(user);
+
   return {
     user: {
       id: user._id,
@@ -110,8 +231,12 @@ const loginUser = async ({ email, password }) => {
       lastName: user.lastName,
       email: user.email,
       phone: user.phone,
+      roleId: user.roleId._id,
       role: user.roleId.name,
-      status: user.status
+      status: user.status,
+      permissions: user.roleId.permissionIds.map(
+        (permission) => permission.name
+      )
     },
     token
   };
@@ -119,5 +244,6 @@ const loginUser = async ({ email, password }) => {
 
 module.exports = {
   registerUser,
+  adminCreateUser,
   loginUser
 };

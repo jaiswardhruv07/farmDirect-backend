@@ -1,50 +1,37 @@
 const express = require("express");
 
 const {
-  register,
-  login,
-  getCurrentUser
+  createUserByAdmin
 } = require("../controllers/auth.controller");
 
 const authenticate = require("../middlewares/auth.middleware");
 
+const {
+  requirePermissions
+} = require("../middlewares/rbac.middleware");
+
 const validate = require("../middlewares/validation.middleware");
 
 const {
-  registerSchema,
-  loginSchema
+  adminCreateUserSchema
 } = require("../schemas/auth.schema");
+
+const PERMISSIONS = require("../enums/permission.enum");
 
 const router = express.Router();
 
 /*
 |--------------------------------------------------------------------------
-| Public Authentication Routes
+| Admin User Onboarding
 |--------------------------------------------------------------------------
 */
 
 router.post(
-  "/register",
-  validate(registerSchema),
-  register
-);
-
-router.post(
-  "/login",
-  validate(loginSchema),
-  login
-);
-
-/*
-|--------------------------------------------------------------------------
-| Authenticated User
-|--------------------------------------------------------------------------
-*/
-
-router.get(
-  "/me",
+  "/users",
   authenticate,
-  getCurrentUser
+  requirePermissions(PERMISSIONS.USER_CREATE),
+  validate(adminCreateUserSchema),
+  createUserByAdmin
 );
 
 module.exports = router;
