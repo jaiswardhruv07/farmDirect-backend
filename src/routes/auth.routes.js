@@ -14,9 +14,21 @@ const { registerSchema, loginSchema } = require("../schemas/auth.schema");
 
 const router = express.Router();
 
+/*
+|--------------------------------------------------------------------------
+| Public Authentication Routes
+|--------------------------------------------------------------------------
+*/
+
 router.post("/register", validate(registerSchema), register);
 
 router.post("/login", validate(loginSchema), login);
+
+/*
+|--------------------------------------------------------------------------
+| Authenticated User
+|--------------------------------------------------------------------------
+*/
 
 router.get("/me", authenticate, getCurrentUser);
 

@@ -1,4 +1,14 @@
-const { registerUser, loginUser } = require("../services/auth.service");
+const {
+  registerUser,
+  adminCreateUser,
+  loginUser
+} = require("../services/auth.service");
+
+/*
+|--------------------------------------------------------------------------
+| Public Registration
+|--------------------------------------------------------------------------
+*/
 
 const register = async (req, res, next) => {
   try {
@@ -14,6 +24,34 @@ const register = async (req, res, next) => {
   }
 };
 
+/*
+|--------------------------------------------------------------------------
+| Admin User Creation
+|--------------------------------------------------------------------------
+*/
+
+const createUserByAdmin = async (req, res, next) => {
+  try {
+    const user = await adminCreateUser(req.body);
+
+    res.status(201).json({
+      success: true,
+      message: "User onboarded successfully",
+      data: {
+        user
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/*
+|--------------------------------------------------------------------------
+| Login
+|--------------------------------------------------------------------------
+*/
+
 const login = async (req, res, next) => {
   try {
     const result = await loginUser(req.body);
@@ -28,6 +66,12 @@ const login = async (req, res, next) => {
   }
 };
 
+/*
+|--------------------------------------------------------------------------
+| Current User
+|--------------------------------------------------------------------------
+*/
+
 const getCurrentUser = async (req, res) => {
   res.status(200).json({
     success: true,
@@ -38,6 +82,7 @@ const getCurrentUser = async (req, res) => {
       email: req.user.email,
       phone: req.user.phone,
       status: req.user.status,
+      roleId: req.user.roleId._id,
       role: req.user.roleId.name,
       permissions: req.user.roleId.permissionIds.map(
         (permission) => permission.name
@@ -48,6 +93,7 @@ const getCurrentUser = async (req, res) => {
 
 module.exports = {
   register,
+  createUserByAdmin,
   login,
   getCurrentUser
 };

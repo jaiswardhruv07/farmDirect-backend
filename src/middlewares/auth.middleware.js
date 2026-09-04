@@ -1,5 +1,4 @@
 const User = require("../models/User");
-const Role = require("../models/Role");
 const Permission = require("../models/Permission");
 
 const { verifyAccessToken } = require("../utils/auth");
@@ -20,15 +19,13 @@ const authenticate = async (req, res, next) => {
 
     const decoded = verifyAccessToken(token);
 
-    const user = await User.findById(decoded.sub)
-      .select("+passwordHash")
-      .populate({
-        path: "roleId",
-        populate: {
-          path: "permissionIds",
-          model: Permission
-        }
-      });
+    const user = await User.findById(decoded.sub).populate({
+      path: "roleId",
+      populate: {
+        path: "permissionIds",
+        model: Permission
+      }
+    });
 
     if (!user) {
       return res.status(401).json({
