@@ -17,6 +17,9 @@ const adminProductRoutes = require("./routes/admin.product.routes");
 const inventoryRoutes = require("./routes/inventory.routes");
 const adminInventoryRoutes = require("./routes/admin.inventory.routes");
 
+const orderRoutes = require("./routes/order.routes");
+const adminOrderRoutes = require("./routes/admin.order.routes");
+
 const env = require("./config/env");
 const { API_PREFIX, APP_NAME } = require("./config/constants");
 
@@ -179,6 +182,13 @@ app.use("/api/admin/products", adminProductRoutes);
 */
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/admin/inventory", adminInventoryRoutes);
+/*
+|--------------------------------------------------------------------------
+| Order Handler
+|--------------------------------------------------------------------------
+*/
+app.use("/api/orders", orderRoutes);
+app.use("/api/admin/orders", adminOrderRoutes);
 
 /*
 |--------------------------------------------------------------------------

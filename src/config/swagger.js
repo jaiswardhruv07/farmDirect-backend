@@ -1831,6 +1831,346 @@ const options = {
         },
         /*
         |--------------------------------------------------------------------------
+        | ORDER SCHEMAS
+        |--------------------------------------------------------------------------
+        */
+
+        CreateOrderItemRequest: {
+          type: "object",
+
+          required: ["productId", "quantity"],
+
+          properties: {
+            productId: {
+              type: "string",
+              format: "object-id",
+              description: "MongoDB ObjectId of the product.",
+              example: "64f123456789abcdef123456"
+            },
+
+            quantity: {
+              type: "number",
+              format: "double",
+              exclusiveMinimum: 0,
+              description: "Quantity to purchase.",
+              example: 20
+            }
+          }
+        },
+
+        OrderDeliveryAddress: {
+          type: "object",
+
+          required: ["addressLine1", "district", "state", "pincode"],
+
+          properties: {
+            addressLine1: {
+              type: "string",
+              maxLength: 200,
+              example: "Village Road, House No. 12"
+            },
+
+            addressLine2: {
+              type: "string",
+              nullable: true,
+              maxLength: 200,
+              example: "Near Primary School"
+            },
+
+            village: {
+              type: "string",
+              nullable: true,
+              maxLength: 100,
+              example: "Wakad"
+            },
+
+            city: {
+              type: "string",
+              nullable: true,
+              maxLength: 100,
+              example: "Pune"
+            },
+
+            district: {
+              type: "string",
+              maxLength: 100,
+              example: "Pune"
+            },
+
+            state: {
+              type: "string",
+              maxLength: 100,
+              example: "Maharashtra"
+            },
+
+            pincode: {
+              type: "string",
+              pattern: "^[1-9][0-9]{5}$",
+              example: "411001"
+            }
+          }
+        },
+
+        CreateOrderRequest: {
+          type: "object",
+
+          required: ["items", "deliveryAddress"],
+
+          description:
+            "Create an order using active marketplace products. Buyer identity, seller information, prices, totals and status are controlled by the backend.",
+
+          properties: {
+            items: {
+              type: "array",
+              minItems: 1,
+
+              items: {
+                $ref: "#/components/schemas/CreateOrderItemRequest"
+              }
+            },
+
+            deliveryAddress: {
+              $ref: "#/components/schemas/OrderDeliveryAddress"
+            }
+          }
+        },
+
+        CancelOrderRequest: {
+          type: "object",
+
+          properties: {
+            reason: {
+              type: "string",
+              nullable: true,
+              maxLength: 500,
+              example: "Ordered by mistake"
+            }
+          }
+        },
+
+        AdminOrderStatusUpdateRequest: {
+          type: "object",
+
+          required: ["status"],
+
+          description:
+            "Update an order to the next valid operational status. The backend validates the status transition.",
+
+          properties: {
+            status: {
+              type: "string",
+
+              enum: [
+                "CONFIRMED",
+                "PROCESSING",
+                "READY_FOR_DISPATCH",
+                "SHIPPED",
+                "DELIVERED",
+                "FAILED"
+              ],
+
+              example: "CONFIRMED"
+            }
+          }
+        },
+
+        OrderItem: {
+          type: "object",
+
+          required: [
+            "productId",
+            "sellerType",
+            "sellerId",
+            "productName",
+            "unit",
+            "quantity",
+            "pricePerUnit",
+            "subtotal"
+          ],
+
+          properties: {
+            productId: {
+              type: "string",
+              format: "object-id",
+              example: "64f123456789abcdef123456"
+            },
+
+            sellerType: {
+              type: "string",
+              enum: ["FARMER", "FPO"],
+              example: "FARMER"
+            },
+
+            sellerId: {
+              type: "string",
+              format: "object-id",
+              description:
+                "FarmerProfile or FpoProfile ID depending on sellerType.",
+              example: "64f987654321abcdef987654"
+            },
+
+            productName: {
+              type: "string",
+              example: "Fresh Tomatoes"
+            },
+
+            unit: {
+              type: "string",
+              enum: ["KG", "QUINTAL", "TON", "PIECE"],
+              example: "KG"
+            },
+
+            quantity: {
+              type: "number",
+              format: "double",
+              example: 20
+            },
+
+            pricePerUnit: {
+              type: "number",
+              format: "double",
+              example: 35.5
+            },
+
+            subtotal: {
+              type: "number",
+              format: "double",
+              example: 710
+            }
+          }
+        },
+
+        OrderCancellation: {
+          type: "object",
+          nullable: true,
+
+          properties: {
+            cancelledBy: {
+              type: "string",
+              format: "object-id",
+              nullable: true,
+              example: "64f111111111111111111111"
+            },
+
+            cancelledAt: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2026-09-05T10:30:00.000Z"
+            },
+
+            reason: {
+              type: "string",
+              nullable: true,
+              maxLength: 500,
+              example: "Ordered by mistake"
+            }
+          }
+        },
+
+        Order: {
+          type: "object",
+
+          properties: {
+            _id: {
+              type: "string",
+              format: "object-id",
+              example: "64fa123456789abcdef12345"
+            },
+
+            orderNumber: {
+              type: "string",
+              description: "Human-readable unique order number.",
+              example: "FD-20260905-A1B2C3"
+            },
+
+            buyerId: {
+              type: "string",
+              format: "object-id",
+              description: "ID of the user who placed the order.",
+              example: "64fb123456789abcdef12345"
+            },
+
+            buyerType: {
+              type: "string",
+              enum: ["CONSUMER", "BULK_BUYER"],
+              example: "CONSUMER"
+            },
+
+            items: {
+              type: "array",
+              minItems: 1,
+
+              items: {
+                $ref: "#/components/schemas/OrderItem"
+              }
+            },
+
+            deliveryAddress: {
+              $ref: "#/components/schemas/OrderDeliveryAddress"
+            },
+
+            totalAmount: {
+              type: "number",
+              format: "double",
+              minimum: 0,
+              example: 1420
+            },
+
+            currency: {
+              type: "string",
+              enum: ["INR"],
+              example: "INR"
+            },
+
+            status: {
+              type: "string",
+
+              enum: [
+                "PENDING",
+                "CONFIRMED",
+                "PROCESSING",
+                "READY_FOR_DISPATCH",
+                "SHIPPED",
+                "DELIVERED",
+                "CANCELLED",
+                "FAILED"
+              ],
+
+              example: "PENDING"
+            },
+
+            paymentStatus: {
+              type: "string",
+
+              enum: [
+                "PENDING",
+                "PAID",
+                "FAILED",
+                "REFUNDED",
+                "PARTIALLY_REFUNDED"
+              ],
+
+              example: "PENDING"
+            },
+
+            cancellation: {
+              $ref: "#/components/schemas/OrderCancellation"
+            },
+
+            createdAt: {
+              type: "string",
+              format: "date-time"
+            },
+
+            updatedAt: {
+              type: "string",
+              format: "date-time"
+            }
+          }
+        },
+        /*
+        |--------------------------------------------------------------------------
         | INVENTORY SCHEMAS
         |--------------------------------------------------------------------------
         */
