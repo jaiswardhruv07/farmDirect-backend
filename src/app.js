@@ -1,3 +1,6 @@
+const productRoutes = require("./routes/product.routes");
+const adminProductRoutes = require("./routes/admin.product.routes");
+const profileRoutes = require("./routes/profile.routes");
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
@@ -105,11 +108,15 @@ app.get("/", (req, res) => {
 
 app.use(`${API_PREFIX}/auth`, authRoutes);
 app.use(`${API_PREFIX}/admin`, adminRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/admin/products", adminProductRoutes);
+app.use("/api/profiles", profileRoutes);
 /*
 |--------------------------------------------------------------------------
 | 404 Handler
 |--------------------------------------------------------------------------
 */
+
 
 app.use((req, res) => {
   res.status(404).json({
