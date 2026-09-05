@@ -400,9 +400,7 @@ const options = {
           properties: {
             status: {
               type: "string",
-
               enum: ["PENDING", "VERIFIED", "REJECTED"],
-
               example: "PENDING"
             },
 
@@ -928,7 +926,6 @@ const options = {
 
                 email: {
                   type: "string",
-                  format: "email",
                   example: "fpo@example.com"
                 }
               }
@@ -1193,6 +1190,606 @@ const options = {
 
             verification: {
               $ref: "#/components/schemas/Verification"
+            },
+
+            createdAt: {
+              type: "string",
+              format: "date-time"
+            },
+
+            updatedAt: {
+              type: "string",
+              format: "date-time"
+            }
+          }
+        },
+
+        /*
+        |--------------------------------------------------------------------------
+        | PRODUCT SCHEMAS
+        |--------------------------------------------------------------------------
+        */
+
+        ProductApproval: {
+          type: "object",
+
+          description: "Administrative approval information for a product.",
+
+          properties: {
+            status: {
+              type: "string",
+              enum: ["PENDING", "APPROVED", "REJECTED"],
+              example: "PENDING"
+            },
+
+            reviewedBy: {
+              type: "string",
+              format: "object-id",
+              nullable: true,
+              description: "User ID of the Admin who reviewed the product.",
+              example: null
+            },
+
+            reviewedAt: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: null
+            },
+
+            rejectionReason: {
+              type: "string",
+              nullable: true,
+              maxLength: 500,
+              example: null
+            }
+          }
+        },
+
+        /*
+        |--------------------------------------------------------------------------
+        | PRODUCT CREATE
+        |--------------------------------------------------------------------------
+        */
+
+        ProductCreateRequest: {
+          type: "object",
+
+          required: [
+            "name",
+            "category",
+            "unit",
+            "pricePerUnit",
+            "minimumOrderQuantity",
+            "qualityGrade"
+          ],
+
+          description:
+            "Product submitted by a Farmer or FPO. Seller identity and approval status are assigned by the backend.",
+
+          properties: {
+            name: {
+              type: "string",
+              minLength: 2,
+              maxLength: 150,
+              example: "Fresh Tomatoes"
+            },
+
+            category: {
+              type: "string",
+              enum: ["VEGETABLE", "FRUIT", "GRAIN", "PULSE", "SPICE", "OTHER"],
+              example: "VEGETABLE"
+            },
+
+            variety: {
+              type: "string",
+              maxLength: 100,
+              nullable: true,
+              example: "Hybrid Tomato"
+            },
+
+            description: {
+              type: "string",
+              maxLength: 1000,
+              nullable: true,
+              example: "Fresh farm-grown hybrid tomatoes."
+            },
+
+            unit: {
+              type: "string",
+              enum: ["KG", "QUINTAL", "TON", "PIECE"],
+              example: "KG"
+            },
+
+            pricePerUnit: {
+              type: "number",
+              minimum: 0,
+              example: 35
+            },
+
+            minimumOrderQuantity: {
+              type: "number",
+              exclusiveMinimum: 0,
+              example: 5
+            },
+
+            images: {
+              type: "array",
+              maxItems: 10,
+
+              items: {
+                type: "string",
+                format: "uri"
+              },
+
+              example: ["https://example.com/tomato.jpg"]
+            },
+
+            qualityGrade: {
+              type: "string",
+              enum: ["A", "B", "C"],
+              example: "A"
+            },
+
+            organic: {
+              type: "boolean",
+              default: false,
+              example: true
+            },
+
+            harvestDate: {
+              type: "string",
+              format: "date",
+              nullable: true,
+              example: "2026-09-01"
+            }
+          }
+        },
+
+        /*
+        |--------------------------------------------------------------------------
+        | PRODUCT UPDATE
+        |--------------------------------------------------------------------------
+        */
+
+        ProductUpdateRequest: {
+          type: "object",
+
+          description:
+            "Fields that a Farmer or FPO can update for their own product. Seller and approval fields cannot be modified by the seller.",
+
+          properties: {
+            name: {
+              type: "string",
+              minLength: 2,
+              maxLength: 150,
+              example: "Fresh Hybrid Tomatoes"
+            },
+
+            category: {
+              type: "string",
+              enum: ["VEGETABLE", "FRUIT", "GRAIN", "PULSE", "SPICE", "OTHER"],
+              example: "VEGETABLE"
+            },
+
+            variety: {
+              type: "string",
+              maxLength: 100,
+              nullable: true,
+              example: "Hybrid"
+            },
+
+            description: {
+              type: "string",
+              maxLength: 1000,
+              nullable: true,
+              example: "Freshly harvested farm-grown tomatoes."
+            },
+
+            unit: {
+              type: "string",
+              enum: ["KG", "QUINTAL", "TON", "PIECE"],
+              example: "KG"
+            },
+
+            pricePerUnit: {
+              type: "number",
+              minimum: 0,
+              example: 38
+            },
+
+            minimumOrderQuantity: {
+              type: "number",
+              exclusiveMinimum: 0,
+              example: 5
+            },
+
+            images: {
+              type: "array",
+              maxItems: 10,
+
+              items: {
+                type: "string",
+                format: "uri"
+              },
+
+              example: ["https://example.com/tomato-updated.jpg"]
+            },
+
+            qualityGrade: {
+              type: "string",
+              enum: ["A", "B", "C"],
+              example: "A"
+            },
+
+            organic: {
+              type: "boolean",
+              example: true
+            },
+
+            harvestDate: {
+              type: "string",
+              format: "date",
+              nullable: true,
+              example: "2026-09-02"
+            }
+          }
+        },
+
+        /*
+        |--------------------------------------------------------------------------
+        | ADMIN PRODUCT CREATE
+        |--------------------------------------------------------------------------
+        */
+
+        AdminProductCreateRequest: {
+          type: "object",
+
+          required: [
+            "sellerType",
+            "sellerId",
+            "name",
+            "category",
+            "unit",
+            "pricePerUnit",
+            "minimumOrderQuantity",
+            "qualityGrade"
+          ],
+
+          description:
+            "Admin creates a product on behalf of an existing Farmer or FPO. The product is automatically approved and active.",
+
+          properties: {
+            sellerType: {
+              type: "string",
+              enum: ["FARMER", "FPO"],
+              description: "Type of the actual produce seller.",
+              example: "FARMER"
+            },
+
+            sellerId: {
+              type: "string",
+              format: "object-id",
+              description:
+                "FarmerProfile or FpoProfile ID depending on sellerType.",
+              example: "66c8f3a1234567890abcdef2"
+            },
+
+            name: {
+              type: "string",
+              minLength: 2,
+              maxLength: 150,
+              example: "Fresh Tomatoes"
+            },
+
+            category: {
+              type: "string",
+              enum: ["VEGETABLE", "FRUIT", "GRAIN", "PULSE", "SPICE", "OTHER"],
+              example: "VEGETABLE"
+            },
+
+            variety: {
+              type: "string",
+              maxLength: 100,
+              nullable: true,
+              example: "Hybrid Tomato"
+            },
+
+            description: {
+              type: "string",
+              maxLength: 1000,
+              nullable: true,
+              example: "Fresh farm-grown hybrid tomatoes."
+            },
+
+            unit: {
+              type: "string",
+              enum: ["KG", "QUINTAL", "TON", "PIECE"],
+              example: "KG"
+            },
+
+            pricePerUnit: {
+              type: "number",
+              minimum: 0,
+              example: 35
+            },
+
+            minimumOrderQuantity: {
+              type: "number",
+              exclusiveMinimum: 0,
+              example: 5
+            },
+
+            images: {
+              type: "array",
+              maxItems: 10,
+
+              items: {
+                type: "string",
+                format: "uri"
+              },
+
+              example: ["https://example.com/tomato.jpg"]
+            },
+
+            qualityGrade: {
+              type: "string",
+              enum: ["A", "B", "C"],
+              example: "A"
+            },
+
+            organic: {
+              type: "boolean",
+              default: false,
+              example: true
+            },
+
+            harvestDate: {
+              type: "string",
+              format: "date",
+              nullable: true,
+              example: "2026-09-01"
+            }
+          }
+        },
+
+        /*
+        |--------------------------------------------------------------------------
+        | ADMIN PRODUCT UPDATE
+        |--------------------------------------------------------------------------
+        */
+
+        AdminProductUpdateRequest: {
+          type: "object",
+
+          description:
+            "Admin can update product details, reassign the actual seller, or change the operational status.",
+
+          properties: {
+            sellerType: {
+              type: "string",
+              enum: ["FARMER", "FPO"],
+              example: "FPO"
+            },
+
+            sellerId: {
+              type: "string",
+              format: "object-id",
+              description:
+                "FarmerProfile or FpoProfile ID depending on sellerType.",
+              example: "66c8f3a1234567890abcdef3"
+            },
+
+            name: {
+              type: "string",
+              minLength: 2,
+              maxLength: 150,
+              example: "Fresh Tomatoes"
+            },
+
+            category: {
+              type: "string",
+              enum: ["VEGETABLE", "FRUIT", "GRAIN", "PULSE", "SPICE", "OTHER"],
+              example: "VEGETABLE"
+            },
+
+            variety: {
+              type: "string",
+              maxLength: 100,
+              nullable: true,
+              example: "Hybrid"
+            },
+
+            description: {
+              type: "string",
+              maxLength: 1000,
+              nullable: true,
+              example: "Fresh farm-grown tomatoes."
+            },
+
+            unit: {
+              type: "string",
+              enum: ["KG", "QUINTAL", "TON", "PIECE"],
+              example: "KG"
+            },
+
+            pricePerUnit: {
+              type: "number",
+              minimum: 0,
+              example: 40
+            },
+
+            minimumOrderQuantity: {
+              type: "number",
+              exclusiveMinimum: 0,
+              example: 10
+            },
+
+            images: {
+              type: "array",
+              maxItems: 10,
+
+              items: {
+                type: "string",
+                format: "uri"
+              }
+            },
+
+            qualityGrade: {
+              type: "string",
+              enum: ["A", "B", "C"],
+              example: "A"
+            },
+
+            organic: {
+              type: "boolean",
+              example: true
+            },
+
+            harvestDate: {
+              type: "string",
+              format: "date",
+              nullable: true,
+              example: "2026-09-02"
+            },
+
+            status: {
+              type: "string",
+              enum: ["ACTIVE", "INACTIVE"],
+              description:
+                "Operational marketplace status. Approval fields cannot be modified directly.",
+              example: "INACTIVE"
+            }
+          }
+        },
+
+        /*
+        |--------------------------------------------------------------------------
+        | PRODUCT REJECTION
+        |--------------------------------------------------------------------------
+        */
+
+        ProductRejectRequest: {
+          type: "object",
+
+          required: ["rejectionReason"],
+
+          properties: {
+            rejectionReason: {
+              type: "string",
+              minLength: 1,
+              maxLength: 500,
+              example:
+                "Product information is incomplete. Please provide the correct quality grade and harvest details."
+            }
+          }
+        },
+
+        /*
+        |--------------------------------------------------------------------------
+        | PRODUCT RESPONSE
+        |--------------------------------------------------------------------------
+        */
+
+        Product: {
+          type: "object",
+
+          properties: {
+            id: {
+              type: "string",
+              format: "object-id",
+              example: "66c8f3a1234567890abcdef4"
+            },
+
+            sellerType: {
+              type: "string",
+              enum: ["FARMER", "FPO"],
+              example: "FARMER"
+            },
+
+            sellerId: {
+              type: "string",
+              format: "object-id",
+              description: "FarmerProfile or FpoProfile ID.",
+              example: "66c8f3a1234567890abcdef2"
+            },
+
+            name: {
+              type: "string",
+              example: "Fresh Tomatoes"
+            },
+
+            category: {
+              type: "string",
+              enum: ["VEGETABLE", "FRUIT", "GRAIN", "PULSE", "SPICE", "OTHER"],
+              example: "VEGETABLE"
+            },
+
+            variety: {
+              type: "string",
+              nullable: true,
+              example: "Hybrid Tomato"
+            },
+
+            description: {
+              type: "string",
+              nullable: true,
+              example: "Fresh farm-grown hybrid tomatoes."
+            },
+
+            unit: {
+              type: "string",
+              enum: ["KG", "QUINTAL", "TON", "PIECE"],
+              example: "KG"
+            },
+
+            pricePerUnit: {
+              type: "number",
+              format: "double",
+              example: 35
+            },
+
+            minimumOrderQuantity: {
+              type: "number",
+              example: 5
+            },
+
+            images: {
+              type: "array",
+
+              items: {
+                type: "string",
+                format: "uri"
+              },
+
+              example: ["https://example.com/tomato.jpg"]
+            },
+
+            qualityGrade: {
+              type: "string",
+              enum: ["A", "B", "C"],
+              example: "A"
+            },
+
+            organic: {
+              type: "boolean",
+              example: true
+            },
+
+            harvestDate: {
+              type: "string",
+              format: "date-time",
+              nullable: true
+            },
+
+            status: {
+              type: "string",
+              enum: ["PENDING_APPROVAL", "ACTIVE", "REJECTED", "INACTIVE"],
+              example: "ACTIVE"
+            },
+
+            approval: {
+              $ref: "#/components/schemas/ProductApproval"
             },
 
             createdAt: {
