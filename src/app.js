@@ -1,3 +1,5 @@
+const productRoutes = require("./routes/product.routes");
+const adminProductRoutes = require("./routes/admin.product.routes");
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
@@ -35,7 +37,7 @@ app.use(
 */
 
 const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
+  wiyndowMs: 15 * 60 * 1000,
   max: 200,
   standardHeaders: true,
   legacyHeaders: false,
@@ -106,6 +108,7 @@ app.get("/", (req, res) => {
 app.use(`${API_PREFIX}/auth`, authRoutes);
 app.use(`${API_PREFIX}/admin`, adminRoutes);
 app.use("/api/profiles", profileRoutes);
+app.use("/api/products", productRoutes);
 /*
 |--------------------------------------------------------------------------
 | 404 Handler
