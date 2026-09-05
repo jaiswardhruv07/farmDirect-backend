@@ -10,9 +10,7 @@ const {
   PRODUCT_SELLER_TYPE,
   PRODUCT_STATUS
 } = require("../enums/product.enum");
-const {
-  INVENTORY_STOCK_OPERATION
-} = require("../enums/inventory.enum");
+const { INVENTORY_STOCK_OPERATION } = require("../enums/inventory.enum");
 
 /*
  * Get authenticated user's role.
@@ -163,9 +161,7 @@ const ensureProductOwnership = async (product, user) => {
  */
 const validateTotalStock = (totalStock, reservedStock) => {
   if (totalStock < reservedStock) {
-    const error = new Error(
-      "Total stock cannot be less than reserved stock"
-    );
+    const error = new Error("Total stock cannot be less than reserved stock");
     error.statusCode = 400;
     throw error;
   }
@@ -186,9 +182,7 @@ const createInventory = async (user, data) => {
   });
 
   if (existingInventory) {
-    const error = new Error(
-      "Inventory already exists for this product"
-    );
+    const error = new Error("Inventory already exists for this product");
     error.statusCode = 409;
     throw error;
   }
@@ -296,10 +290,7 @@ const updateMyInventory = async (user, inventoryId, data) => {
   await ensureProductOwnership(product, user);
 
   if (data.totalStock !== undefined) {
-    validateTotalStock(
-      data.totalStock,
-      inventory.reservedStock
-    );
+    validateTotalStock(data.totalStock, inventory.reservedStock);
 
     inventory.totalStock = data.totalStock;
   }
@@ -369,10 +360,7 @@ const adjustMyStock = async (user, inventoryId, operation, quantity) => {
     newTotalStock = inventory.totalStock - quantity;
   }
 
-  validateTotalStock(
-    newTotalStock,
-    inventory.reservedStock
-  );
+  validateTotalStock(newTotalStock, inventory.reservedStock);
 
   inventory.totalStock = newTotalStock;
   inventory.lastUpdatedBy = user._id;
@@ -393,10 +381,9 @@ const adminCreateInventory = async (user, data) => {
   const product = await getActiveProduct(data.productId);
 
   if (
-    ![
-      PRODUCT_SELLER_TYPE.FARMER,
-      PRODUCT_SELLER_TYPE.FPO
-    ].includes(product.sellerType)
+    ![PRODUCT_SELLER_TYPE.FARMER, PRODUCT_SELLER_TYPE.FPO].includes(
+      product.sellerType
+    )
   ) {
     const error = new Error(
       "Inventory can only be created for Farmer or FPO products"
@@ -408,9 +395,7 @@ const adminCreateInventory = async (user, data) => {
   const sellerProfile = await getProductSellerProfile(product);
 
   if (!sellerProfile) {
-    const error = new Error(
-      "Product seller profile not found"
-    );
+    const error = new Error("Product seller profile not found");
     error.statusCode = 404;
     throw error;
   }
@@ -420,9 +405,7 @@ const adminCreateInventory = async (user, data) => {
   });
 
   if (existingInventory) {
-    const error = new Error(
-      "Inventory already exists for this product"
-    );
+    const error = new Error("Inventory already exists for this product");
     error.statusCode = 409;
     throw error;
   }
@@ -459,10 +442,7 @@ const getAdminInventory = async (user, filters = {}) => {
     query.$expr = {
       $lte: [
         {
-          $subtract: [
-            "$totalStock",
-            "$reservedStock"
-          ]
+          $subtract: ["$totalStock", "$reservedStock"]
         },
         "$lowStockThreshold"
       ]
@@ -533,10 +513,7 @@ const adminUpdateInventory = async (user, inventoryId, data) => {
   }
 
   if (data.totalStock !== undefined) {
-    validateTotalStock(
-      data.totalStock,
-      inventory.reservedStock
-    );
+    validateTotalStock(data.totalStock, inventory.reservedStock);
 
     inventory.totalStock = data.totalStock;
   }
@@ -557,12 +534,7 @@ const adminUpdateInventory = async (user, inventoryId, data) => {
  *
  * Manual stock adjustment.
  */
-const adminAdjustStock = async (
-  user,
-  inventoryId,
-  operation,
-  quantity
-) => {
+const adminAdjustStock = async (user, inventoryId, operation, quantity) => {
   ensureRole(user, ROLES.ADMIN);
 
   validateObjectId(inventoryId, "inventoryId");
@@ -595,10 +567,7 @@ const adminAdjustStock = async (
     newTotalStock = inventory.totalStock - quantity;
   }
 
-  validateTotalStock(
-    newTotalStock,
-    inventory.reservedStock
-  );
+  validateTotalStock(newTotalStock, inventory.reservedStock);
 
   inventory.totalStock = newTotalStock;
   inventory.lastUpdatedBy = user._id;
@@ -607,7 +576,6 @@ const adminAdjustStock = async (
 
   return inventory;
 };
-
 
 /*
  * INTERNAL ORDER OPERATIONS
@@ -640,10 +608,7 @@ const reserveStock = async (productId, quantity, session = null) => {
       $expr: {
         $gte: [
           {
-            $subtract: [
-              "$totalStock",
-              "$reservedStock"
-            ]
+            $subtract: ["$totalStock", "$reservedStock"]
           },
           quantity
         ]
@@ -669,11 +634,7 @@ const reserveStock = async (productId, quantity, session = null) => {
 /*
  * Release previously reserved stock.
  */
-const releaseReservedStock = async (
-  productId,
-  quantity,
-  session = null
-) => {
+const releaseReservedStock = async (productId, quantity, session = null) => {
   validateObjectId(productId, "productId");
 
   if (!Number.isFinite(quantity) || quantity <= 0) {
@@ -698,9 +659,7 @@ const releaseReservedStock = async (
   );
 
   if (!inventory) {
-    const error = new Error(
-      "Unable to release the requested reserved stock"
-    );
+    const error = new Error("Unable to release the requested reserved stock");
     error.statusCode = 409;
     throw error;
   }
@@ -721,11 +680,7 @@ const releaseReservedStock = async (
  * totalStock = 400
  * reservedStock = 0
  */
-const consumeReservedStock = async (
-  productId,
-  quantity,
-  session = null
-) => {
+const consumeReservedStock = async (productId, quantity, session = null) => {
   validateObjectId(productId, "productId");
 
   if (!Number.isFinite(quantity) || quantity <= 0) {
@@ -752,16 +707,13 @@ const consumeReservedStock = async (
   );
 
   if (!inventory) {
-    const error = new Error(
-      "Unable to consume the requested reserved stock"
-    );
+    const error = new Error("Unable to consume the requested reserved stock");
     error.statusCode = 409;
     throw error;
   }
 
   return inventory;
 };
-
 
 module.exports = {
   createInventory,

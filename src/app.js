@@ -1,3 +1,5 @@
+const orderRoutes = require("./routes/order.routes");
+const adminOrderRoutes = require("./routes/admin.order.routes");
 const inventoryRoutes = require("./routes/inventory.routes");
 const adminInventoryRoutes = require("./routes/admin.inventory.routes");
 const productRoutes = require("./routes/product.routes");
@@ -114,6 +116,8 @@ app.use("/api/admin/products", adminProductRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/admin/inventory", adminInventoryRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/admin/orders", adminOrderRoutes);
 /*
 |--------------------------------------------------------------------------
 | 404 Handler
