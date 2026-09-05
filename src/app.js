@@ -4,6 +4,8 @@ const helmet = require("helmet");
 const morgan = require("morgan");
 const cookieParser = require("cookie-parser");
 const rateLimit = require("express-rate-limit");
+const swaggerUi = require("swagger-ui-express");
+const swaggerSpec = require("./config/swagger");
 
 const authRoutes = require("./routes/auth.routes");
 const adminRoutes = require("./routes/admin.routes");
@@ -71,10 +73,54 @@ if (env.NODE_ENV !== "test") {
 
 /*
 |--------------------------------------------------------------------------
+| API Documentation
+|--------------------------------------------------------------------------
+*/
+
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    explorer: true,
+    customSiteTitle: "FarmDirect API Documentation"
+  })
+);
+
+/*
+|--------------------------------------------------------------------------
 | Health Check
 |--------------------------------------------------------------------------
 */
 
+/**
+ * @swagger
+ * /api/health:
+ *   get:
+ *     summary: Check API health
+ *     description: Returns the current health and runtime status of the FarmDirect API.
+ *     tags:
+ *       - Health
+ *     responses:
+ *       200:
+ *         description: API is healthy and running
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: FarmDirect API is running
+ *                 environment:
+ *                   type: string
+ *                   example: development
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ */
 app.get(`${API_PREFIX}/health`, (req, res) => {
   res.status(200).json({
     success: true,

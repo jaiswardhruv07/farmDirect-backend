@@ -20,6 +20,34 @@ const router = express.Router();
 |--------------------------------------------------------------------------
 */
 
+/**
+ * @swagger
+ * /api/admin/users:
+ *   post:
+ *     summary: Create a user through admin onboarding
+ *     description: Allows an authorized administrator to onboard Bulk Buyers, FPOs, Logistics users and Government Officers.
+ *     tags:
+ *       - Admin
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/AdminCreateUserRequest'
+ *     responses:
+ *       201:
+ *         description: User onboarded successfully
+ *       400:
+ *         description: Invalid role or request data
+ *       401:
+ *         description: Authentication required
+ *       403:
+ *         description: User does not have USER_CREATE permission
+ *       409:
+ *         description: Email or phone number already registered
+ */
 router.post(
   "/users",
   authenticate,
