@@ -4,8 +4,9 @@ const helmet = require("helmet");
 const morgan = require("morgan");
 const cookieParser = require("cookie-parser");
 const rateLimit = require("express-rate-limit");
-
+const profileRoutes = require("./routes/profile.routes");
 const authRoutes = require("./routes/auth.routes");
+const adminRoutes = require("./routes/admin.routes");
 
 const env = require("./config/env");
 const { API_PREFIX, APP_NAME } = require("./config/constants");
@@ -103,7 +104,8 @@ app.get("/", (req, res) => {
 */
 
 app.use(`${API_PREFIX}/auth`, authRoutes);
-
+app.use(`${API_PREFIX}/admin`, adminRoutes);
+app.use("/api/profiles", profileRoutes);
 /*
 |--------------------------------------------------------------------------
 | 404 Handler
