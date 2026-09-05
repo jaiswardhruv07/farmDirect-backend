@@ -1,3 +1,4 @@
+const dashboardRoutes = require("./routes/dashboard.routes");
 const orderRoutes = require("./routes/order.routes");
 const adminOrderRoutes = require("./routes/admin.order.routes");
 const inventoryRoutes = require("./routes/inventory.routes");
@@ -118,6 +119,7 @@ app.use("/api/profiles", profileRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/admin/inventory", adminInventoryRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/dashboard",dashboardRoutes);
 app.use("/api/admin/orders", adminOrderRoutes);
 /*
 |--------------------------------------------------------------------------
