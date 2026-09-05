@@ -1,0 +1,8 @@
+const INVENTORY_STOCK_OPERATION = {
+  ADD: "ADD",
+  REMOVE: "REMOVE"
+};
+
+module.exports = {
+  INVENTORY_STOCK_OPERATION
+};

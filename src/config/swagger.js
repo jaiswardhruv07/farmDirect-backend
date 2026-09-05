@@ -1828,6 +1828,244 @@ const options = {
               type: "object"
             }
           }
+        },
+        /*
+        |--------------------------------------------------------------------------
+        | INVENTORY SCHEMAS
+        |--------------------------------------------------------------------------
+        */
+
+        InventoryCreateRequest: {
+          type: "object",
+
+          required: ["productId", "totalStock"],
+
+          description:
+            "Create inventory for an active product owned by the authenticated Farmer or FPO. Seller identity, unit, reserved stock and lastUpdatedBy are assigned by the backend.",
+
+          properties: {
+            productId: {
+              type: "string",
+              format: "object-id",
+              description: "Product ID for which inventory is being created.",
+              example: "66c8f3a1234567890abcdef4"
+            },
+
+            totalStock: {
+              type: "number",
+              minimum: 0,
+              example: 500
+            },
+
+            lowStockThreshold: {
+              type: "number",
+              minimum: 0,
+              default: 0,
+              example: 50
+            }
+          }
+        },
+
+        InventoryUpdateRequest: {
+          type: "object",
+
+          minProperties: 1,
+
+          description:
+            "Update inventory configuration. Reserved stock cannot be modified directly.",
+
+          properties: {
+            totalStock: {
+              type: "number",
+              minimum: 0,
+              example: 700
+            },
+
+            lowStockThreshold: {
+              type: "number",
+              minimum: 0,
+              example: 100
+            }
+          }
+        },
+
+        StockAdjustmentRequest: {
+          type: "object",
+
+          required: ["operation", "quantity"],
+
+          description:
+            "Manually add or remove physical stock. Reserved stock is not modified by this operation.",
+
+          properties: {
+            operation: {
+              type: "string",
+              enum: ["ADD", "REMOVE"],
+              example: "ADD"
+            },
+
+            quantity: {
+              type: "number",
+              exclusiveMinimum: 0,
+              example: 100
+            }
+          }
+        },
+
+        AdminInventoryCreateRequest: {
+          type: "object",
+
+          required: ["productId", "totalStock"],
+
+          description:
+            "Admin creates inventory for an active Farmer or FPO product.",
+
+          properties: {
+            productId: {
+              type: "string",
+              format: "object-id",
+              description: "Product ID belonging to a Farmer or FPO.",
+              example: "66c8f3a1234567890abcdef4"
+            },
+
+            totalStock: {
+              type: "number",
+              minimum: 0,
+              example: 1000
+            },
+
+            lowStockThreshold: {
+              type: "number",
+              minimum: 0,
+              default: 0,
+              example: 100
+            }
+          }
+        },
+
+        AdminInventoryUpdateRequest: {
+          type: "object",
+
+          minProperties: 1,
+
+          description:
+            "Admin can update total stock or the low-stock threshold. Reserved stock cannot be modified directly.",
+
+          properties: {
+            totalStock: {
+              type: "number",
+              minimum: 0,
+              example: 900
+            },
+
+            lowStockThreshold: {
+              type: "number",
+              minimum: 0,
+              example: 100
+            }
+          }
+        },
+
+        AdminStockAdjustmentRequest: {
+          type: "object",
+
+          required: ["operation", "quantity"],
+
+          description:
+            "Admin can manually add or remove physical stock. Reserved stock is not modified by this operation.",
+
+          properties: {
+            operation: {
+              type: "string",
+              enum: ["ADD", "REMOVE"],
+              example: "REMOVE"
+            },
+
+            quantity: {
+              type: "number",
+              exclusiveMinimum: 0,
+              example: 50
+            }
+          }
+        },
+
+        Inventory: {
+          type: "object",
+
+          properties: {
+            id: {
+              type: "string",
+              format: "object-id",
+              example: "66c8f3a1234567890abcdef5"
+            },
+
+            productId: {
+              type: "string",
+              format: "object-id",
+              description: "Associated Product ID.",
+              example: "66c8f3a1234567890abcdef4"
+            },
+
+            unit: {
+              type: "string",
+              enum: ["KG", "QUINTAL", "TON", "PIECE"],
+              description:
+                "Inventory unit inherited from the associated product.",
+              example: "KG"
+            },
+
+            totalStock: {
+              type: "number",
+              minimum: 0,
+              example: 500
+            },
+
+            reservedStock: {
+              type: "number",
+              minimum: 0,
+              example: 100
+            },
+
+            availableStock: {
+              type: "number",
+              minimum: 0,
+              readOnly: true,
+              description: "Calculated as totalStock minus reservedStock.",
+              example: 400
+            },
+
+            lowStockThreshold: {
+              type: "number",
+              minimum: 0,
+              example: 50
+            },
+
+            isLowStock: {
+              type: "boolean",
+              readOnly: true,
+              description:
+                "Calculated as availableStock less than or equal to lowStockThreshold.",
+              example: false
+            },
+
+            lastUpdatedBy: {
+              type: "string",
+              format: "object-id",
+              description:
+                "User ID that performed the latest inventory update.",
+              example: "66c8f3a1234567890abcdef1"
+            },
+
+            createdAt: {
+              type: "string",
+              format: "date-time"
+            },
+
+            updatedAt: {
+              type: "string",
+              format: "date-time"
+            }
+          }
         }
       }
     }

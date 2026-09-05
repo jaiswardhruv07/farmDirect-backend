@@ -14,6 +14,9 @@ const profileRoutes = require("./routes/profile.routes");
 const productRoutes = require("./routes/product.routes");
 const adminProductRoutes = require("./routes/admin.product.routes");
 
+const inventoryRoutes = require("./routes/inventory.routes");
+const adminInventoryRoutes = require("./routes/admin.inventory.routes");
+
 const env = require("./config/env");
 const { API_PREFIX, APP_NAME } = require("./config/constants");
 
@@ -169,6 +172,14 @@ app.use("/api/profiles", profileRoutes);
 */
 app.use("/api/products", productRoutes);
 app.use("/api/admin/products", adminProductRoutes);
+/*
+|--------------------------------------------------------------------------
+| Inventory Handler
+|--------------------------------------------------------------------------
+*/
+app.use("/api/inventory", inventoryRoutes);
+app.use("/api/admin/inventory", adminInventoryRoutes);
+
 /*
 |--------------------------------------------------------------------------
 | 404 Handler
