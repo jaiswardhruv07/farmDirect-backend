@@ -2406,6 +2406,825 @@ const options = {
               format: "date-time"
             }
           }
+        },
+        /*
+|--------------------------------------------------------------------------
+| DASHBOARD SCHEMAS
+|--------------------------------------------------------------------------
+*/
+
+        DashboardRecentOrder: {
+          type: "object",
+
+          properties: {
+            orderNumber: {
+              type: "string",
+              example: "FD-20260905-000001"
+            },
+
+            buyerId: {
+              type: "string",
+              format: "object-id",
+              example: "64fb123456789abcdef12345"
+            },
+
+            buyerType: {
+              type: "string",
+              enum: ["CONSUMER", "BULK_BUYER"],
+              example: "CONSUMER"
+            },
+
+            itemCount: {
+              type: "integer",
+              minimum: 0,
+              example: 2
+            },
+
+            totalAmount: {
+              type: "number",
+              format: "double",
+              minimum: 0,
+              example: 1420
+            },
+
+            status: {
+              type: "string",
+              enum: [
+                "PENDING",
+                "CONFIRMED",
+                "PROCESSING",
+                "READY_FOR_DISPATCH",
+                "SHIPPED",
+                "DELIVERED",
+                "CANCELLED",
+                "FAILED"
+              ],
+              example: "PROCESSING"
+            },
+
+            createdAt: {
+              type: "string",
+              format: "date-time"
+            }
+          }
+        },
+
+        DashboardOrderStatusCounts: {
+          type: "object",
+
+          properties: {
+            pending: {
+              type: "integer",
+              example: 3
+            },
+
+            confirmed: {
+              type: "integer",
+              example: 2
+            },
+
+            processing: {
+              type: "integer",
+              example: 1
+            },
+
+            readyForDispatch: {
+              type: "integer",
+              example: 1
+            },
+
+            shipped: {
+              type: "integer",
+              example: 2
+            },
+
+            delivered: {
+              type: "integer",
+              example: 15
+            },
+
+            cancelled: {
+              type: "integer",
+              example: 1
+            },
+
+            failed: {
+              type: "integer",
+              example: 0
+            }
+          }
+        },
+
+        DashboardInventorySummary: {
+          type: "object",
+
+          properties: {
+            totalItems: {
+              type: "integer",
+              example: 12
+            },
+
+            availableStock: {
+              type: "number",
+              format: "double",
+              minimum: 0,
+              example: 1250
+            },
+
+            lowStockItems: {
+              type: "integer",
+              example: 3
+            }
+          }
+        },
+
+        DashboardProductsSummary: {
+          type: "object",
+
+          properties: {
+            active: {
+              type: "integer",
+              example: 15
+            },
+
+            pendingApproval: {
+              type: "integer",
+              example: 3
+            },
+
+            rejected: {
+              type: "integer",
+              example: 1
+            },
+
+            inactive: {
+              type: "integer",
+              example: 2
+            }
+          }
+        },
+
+        DashboardSales: {
+          type: "object",
+
+          properties: {
+            totalSales: {
+              type: "number",
+              format: "double",
+              minimum: 0,
+              example: 125000
+            }
+          }
+        },
+
+        DashboardConsumer: {
+          type: "object",
+
+          properties: {
+            summary: {
+              type: "object",
+
+              properties: {
+                totalOrders: {
+                  type: "integer",
+                  example: 20
+                },
+
+                activeOrders: {
+                  type: "integer",
+                  example: 3
+                },
+
+                completedOrders: {
+                  type: "integer",
+                  example: 15
+                },
+
+                totalSpent: {
+                  type: "number",
+                  format: "double",
+                  example: 45250
+                }
+              }
+            },
+
+            orders: {
+              $ref: "#/components/schemas/DashboardOrderStatusCounts"
+            },
+
+            recentOrders: {
+              type: "array",
+
+              items: {
+                $ref: "#/components/schemas/DashboardRecentOrder"
+              }
+            }
+          }
+        },
+
+        DashboardBulkBuyer: {
+          type: "object",
+
+          properties: {
+            summary: {
+              type: "object",
+
+              properties: {
+                totalOrders: {
+                  type: "integer",
+                  example: 35
+                },
+
+                activeOrders: {
+                  type: "integer",
+                  example: 7
+                },
+
+                completedOrders: {
+                  type: "integer",
+                  example: 25
+                },
+
+                pendingOrders: {
+                  type: "integer",
+                  example: 3
+                },
+
+                totalProcurement: {
+                  type: "number",
+                  format: "double",
+                  example: 12500
+                },
+
+                totalSpending: {
+                  type: "number",
+                  format: "double",
+                  example: 850000
+                }
+              }
+            },
+
+            orders: {
+              $ref: "#/components/schemas/DashboardOrderStatusCounts"
+            },
+
+            recentOrders: {
+              type: "array",
+
+              items: {
+                $ref: "#/components/schemas/DashboardRecentOrder"
+              }
+            },
+
+            procurement: {
+              type: "object",
+
+              properties: {
+                totalQuantity: {
+                  type: "number",
+                  format: "double",
+                  example: 12500
+                },
+
+                totalAmount: {
+                  type: "number",
+                  format: "double",
+                  example: 850000
+                }
+              }
+            }
+          }
+        },
+
+        DashboardFarmer: {
+          type: "object",
+
+          properties: {
+            summary: {
+              type: "object",
+
+              properties: {
+                totalProducts: {
+                  type: "integer",
+                  example: 12
+                },
+
+                activeProducts: {
+                  type: "integer",
+                  example: 8
+                },
+
+                pendingProducts: {
+                  type: "integer",
+                  example: 2
+                },
+
+                availableStock: {
+                  type: "number",
+                  format: "double",
+                  example: 1500
+                },
+
+                lowStockItems: {
+                  type: "integer",
+                  example: 2
+                },
+
+                pendingOrders: {
+                  type: "integer",
+                  example: 3
+                },
+
+                processingOrders: {
+                  type: "integer",
+                  example: 2
+                },
+
+                completedOrders: {
+                  type: "integer",
+                  example: 25
+                },
+
+                totalSales: {
+                  type: "number",
+                  format: "double",
+                  example: 175000
+                }
+              }
+            },
+
+            products: {
+              $ref: "#/components/schemas/DashboardProductsSummary"
+            },
+
+            inventory: {
+              $ref: "#/components/schemas/DashboardInventorySummary"
+            },
+
+            orders: {
+              $ref: "#/components/schemas/DashboardOrderStatusCounts"
+            },
+
+            recentOrders: {
+              type: "array",
+
+              items: {
+                $ref: "#/components/schemas/DashboardRecentOrder"
+              }
+            },
+
+            sales: {
+              $ref: "#/components/schemas/DashboardSales"
+            }
+          }
+        },
+
+        DashboardFpo: {
+          type: "object",
+
+          properties: {
+            summary: {
+              type: "object",
+
+              properties: {
+                totalMembers: {
+                  type: "integer",
+                  example: 120
+                },
+
+                activeMembers: {
+                  type: "integer",
+                  example: 120
+                },
+
+                totalProducts: {
+                  type: "integer",
+                  example: 30
+                },
+
+                activeProducts: {
+                  type: "integer",
+                  example: 24
+                },
+
+                availableStock: {
+                  type: "number",
+                  format: "double",
+                  example: 8500
+                },
+
+                lowStockItems: {
+                  type: "integer",
+                  example: 4
+                },
+
+                totalOrders: {
+                  type: "integer",
+                  example: 150
+                },
+
+                completedOrders: {
+                  type: "integer",
+                  example: 120
+                },
+
+                totalSales: {
+                  type: "number",
+                  format: "double",
+                  example: 1250000
+                }
+              }
+            },
+
+            members: {
+              type: "object",
+
+              properties: {
+                total: {
+                  type: "integer",
+                  example: 120
+                },
+
+                active: {
+                  type: "integer",
+                  example: 120
+                }
+              }
+            },
+
+            products: {
+              type: "object",
+
+              properties: {
+                active: {
+                  type: "integer",
+                  example: 24
+                },
+
+                pendingApproval: {
+                  type: "integer",
+                  example: 4
+                },
+
+                inactive: {
+                  type: "integer",
+                  example: 2
+                }
+              }
+            },
+
+            inventory: {
+              $ref: "#/components/schemas/DashboardInventorySummary"
+            },
+
+            orders: {
+              $ref: "#/components/schemas/DashboardOrderStatusCounts"
+            },
+
+            recentOrders: {
+              type: "array",
+
+              items: {
+                $ref: "#/components/schemas/DashboardRecentOrder"
+              }
+            },
+
+            sales: {
+              $ref: "#/components/schemas/DashboardSales"
+            }
+          }
+        },
+
+        DashboardGovernment: {
+          type: "object",
+
+          properties: {
+            summary: {
+              type: "object",
+
+              properties: {
+                totalFarmers: {
+                  type: "integer",
+                  example: 1500
+                },
+
+                totalFpos: {
+                  type: "integer",
+                  example: 45
+                },
+
+                totalProducts: {
+                  type: "integer",
+                  example: 3500
+                },
+
+                activeProducts: {
+                  type: "integer",
+                  example: 2900
+                },
+
+                totalOrders: {
+                  type: "integer",
+                  example: 12000
+                },
+
+                completedOrders: {
+                  type: "integer",
+                  example: 10500
+                },
+
+                marketplaceVolume: {
+                  type: "number",
+                  format: "double",
+                  example: 45000000
+                }
+              }
+            },
+
+            farmers: {
+              type: "object",
+
+              properties: {
+                total: {
+                  type: "integer",
+                  example: 1500
+                },
+
+                verified: {
+                  type: "integer",
+                  example: 1350
+                }
+              }
+            },
+
+            fpos: {
+              type: "object",
+
+              properties: {
+                total: {
+                  type: "integer",
+                  example: 45
+                },
+
+                verified: {
+                  type: "integer",
+                  example: 42
+                }
+              }
+            },
+
+            marketplace: {
+              type: "object",
+
+              properties: {
+                totalProducts: {
+                  type: "integer",
+                  example: 3500
+                },
+
+                activeProducts: {
+                  type: "integer",
+                  example: 2900
+                },
+
+                totalOrders: {
+                  type: "integer",
+                  example: 12000
+                },
+
+                completedOrders: {
+                  type: "integer",
+                  example: 10500
+                },
+
+                totalTransactionValue: {
+                  type: "number",
+                  format: "double",
+                  example: 45000000
+                }
+              }
+            },
+
+            demand: {
+              type: "object",
+
+              properties: {
+                available: {
+                  type: "boolean",
+                  example: false
+                },
+
+                forecasts: {
+                  type: "array",
+
+                  items: {
+                    type: "object"
+                  },
+
+                  example: []
+                }
+              }
+            }
+          }
+        },
+
+        DashboardAdmin: {
+          type: "object",
+
+          properties: {
+            summary: {
+              type: "object",
+
+              properties: {
+                totalUsers: {
+                  type: "integer",
+                  example: 2500
+                },
+
+                totalFarmers: {
+                  type: "integer",
+                  example: 1500
+                },
+
+                totalConsumers: {
+                  type: "integer",
+                  example: 700
+                },
+
+                totalBulkBuyers: {
+                  type: "integer",
+                  example: 120
+                },
+
+                totalFpos: {
+                  type: "integer",
+                  example: 45
+                },
+
+                totalLogisticsPartners: {
+                  type: "integer",
+                  example: 80
+                },
+
+                totalGovernmentOfficers: {
+                  type: "integer",
+                  example: 55
+                },
+
+                totalProducts: {
+                  type: "integer",
+                  example: 3500
+                },
+
+                activeProducts: {
+                  type: "integer",
+                  example: 2900
+                },
+
+                pendingProductApprovals: {
+                  type: "integer",
+                  example: 150
+                },
+
+                totalOrders: {
+                  type: "integer",
+                  example: 12000
+                },
+
+                activeOrders: {
+                  type: "integer",
+                  example: 900
+                },
+
+                completedOrders: {
+                  type: "integer",
+                  example: 10500
+                },
+
+                totalSales: {
+                  type: "number",
+                  format: "double",
+                  example: 45000000
+                },
+
+                activeShipments: {
+                  type: "integer",
+                  example: 250
+                }
+              }
+            },
+
+            products: {
+              type: "object",
+
+              properties: {
+                pendingApproval: {
+                  type: "integer",
+                  example: 150
+                },
+
+                active: {
+                  type: "integer",
+                  example: 2900
+                },
+
+                inactive: {
+                  type: "integer",
+                  example: 300
+                }
+              }
+            },
+
+            orders: {
+              $ref: "#/components/schemas/DashboardOrderStatusCounts"
+            },
+
+            inventory: {
+              type: "object",
+
+              properties: {
+                lowStockItems: {
+                  type: "integer",
+                  example: 35
+                }
+              }
+            },
+
+            recentOrders: {
+              type: "array",
+
+              items: {
+                $ref: "#/components/schemas/DashboardRecentOrder"
+              }
+            },
+
+            logistics: {
+              type: "object",
+
+              properties: {
+                pendingJobs: {
+                  type: "integer",
+                  example: 30
+                },
+
+                activeShipments: {
+                  type: "integer",
+                  example: 250
+                },
+
+                deliveredShipments: {
+                  type: "integer",
+                  example: 1500
+                }
+              }
+            }
+          }
+        },
+
+        DashboardResponse: {
+          type: "object",
+
+          required: ["success", "data"],
+
+          properties: {
+            success: {
+              type: "boolean",
+              example: true
+            },
+
+            data: {
+              type: "object",
+
+              required: ["role", "dashboard"],
+
+              properties: {
+                role: {
+                  type: "string",
+
+                  enum: [
+                    "ADMIN",
+                    "FARMER",
+                    "CONSUMER",
+                    "BULK_BUYER",
+                    "FPO",
+                    "LOGISTICS",
+                    "GOVERNMENT_OFFICER"
+                  ],
+
+                  example: "FARMER"
+                },
+
+                dashboard: {
+                  type: "object",
+
+                  description:
+                    "Role-specific dashboard data. The structure depends on the authenticated user's role.",
+
+                  additionalProperties: true
+                }
+              }
+            }
+          }
         }
       }
     }

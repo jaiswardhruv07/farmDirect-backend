@@ -20,6 +20,8 @@ const adminInventoryRoutes = require("./routes/admin.inventory.routes");
 const orderRoutes = require("./routes/order.routes");
 const adminOrderRoutes = require("./routes/admin.order.routes");
 
+const dashboardRoutes = require("./routes/dashboard.routes");
+
 const env = require("./config/env");
 const { API_PREFIX, APP_NAME } = require("./config/constants");
 
@@ -189,6 +191,12 @@ app.use("/api/admin/inventory", adminInventoryRoutes);
 */
 app.use("/api/orders", orderRoutes);
 app.use("/api/admin/orders", adminOrderRoutes);
+/*
+|--------------------------------------------------------------------------
+| Dashboard Handler
+|--------------------------------------------------------------------------
+*/
+app.use("/api/dashboard", dashboardRoutes);
 
 /*
 |--------------------------------------------------------------------------
