@@ -8,7 +8,7 @@ const options = {
 
     info: {
       title: "FarmDirect API",
-      version: "1.0.0",
+      version: "1.8.0",
       description:
         "API documentation for the FarmDirect agricultural digital marketplace."
     },
