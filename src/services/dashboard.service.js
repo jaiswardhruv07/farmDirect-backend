@@ -10,6 +10,8 @@ const FpoMember = require("../models/FpoMember");
 const FarmerProfile = require("../models/FarmerProfile");
 const FpoProfile = require("../models/FpoProfile");
 
+const DemandForecast = require("../models/DemandForecast");
+
 const { ROLES } = require("../config/constants");
 
 const { PRODUCT_STATUS } = require("../enums/product.enum");
@@ -1082,12 +1084,45 @@ const getGovernmentDashboard = async (user) => {
         totalTransactionValue: marketplaceVolume
       },
 
-      demand: {
-        available: false,
-
-        forecasts: []
-      }
+      demand: await getLatestDemandForecasts()
     }
+  };
+};
+
+/*
+|--------------------------------------------------------------------------
+| Forecast Service Handler
+|--------------------------------------------------------------------------
+*/
+
+const getLatestDemandForecasts = async () => {
+  const latestForecast = await DemandForecast.findOne()
+    .sort({ forecastDate: -1 })
+    .select("forecastDate")
+    .lean();
+
+  if (!latestForecast) {
+    return {
+      available: false,
+      forecastDate: null,
+      forecasts: []
+    };
+  }
+
+  const forecasts = await DemandForecast.find({
+    forecastDate: latestForecast.forecastDate
+  })
+    .sort({ product: 1, location: 1 })
+    .select(
+      "product category location forecastDate predictedDemandKg modelVersion generatedAt"
+    )
+    .lean();
+
+  return {
+    available: forecasts.length > 0,
+    forecastDate: latestForecast.forecastDate,
+    modelVersion: forecasts[0]?.modelVersion || null,
+    forecasts
   };
 };
 

@@ -141,10 +141,10 @@ const sanitizeSellerProductData = (data) => {
  * Newly submitted products always require Admin approval.
  */
 const createProduct = async (user, data) => {
-  const sellerType = ensureRole(user, [USER_ROLE.FARMER, USER_ROLE.FPO]);
+  const sellerType = ensureRole(user, [ROLES.FARMER, ROLES.FPO]);
 
   const normalizedSellerType =
-    sellerType === USER_ROLE.FARMER
+    sellerType === ROLES.FARMER
       ? PRODUCT_SELLER_TYPE.FARMER
       : PRODUCT_SELLER_TYPE.FPO;
 
@@ -178,10 +178,10 @@ const createProduct = async (user, data) => {
  * Get all products owned by the authenticated Farmer/FPO.
  */
 const getMyProducts = async (user, filters = {}) => {
-  const sellerType = ensureRole(user, [USER_ROLE.FARMER, USER_ROLE.FPO]);
+  const sellerType = ensureRole(user, [ROLES.FARMER, ROLES.FPO]);
 
   const normalizedSellerType =
-    sellerType === USER_ROLE.FARMER
+    sellerType === ROLES.FARMER
       ? PRODUCT_SELLER_TYPE.FARMER
       : PRODUCT_SELLER_TYPE.FPO;
 
@@ -211,10 +211,10 @@ const getMyProducts = async (user, filters = {}) => {
  * Get one product owned by the authenticated Farmer/FPO.
  */
 const getMyProductById = async (user, productId) => {
-  const sellerType = ensureRole(user, [USER_ROLE.FARMER, USER_ROLE.FPO]);
+  const sellerType = ensureRole(user, [ROLES.FARMER, ROLES.FPO]);
 
   const normalizedSellerType =
-    sellerType === USER_ROLE.FARMER
+    sellerType === ROLES.FARMER
       ? PRODUCT_SELLER_TYPE.FARMER
       : PRODUCT_SELLER_TYPE.FPO;
 
@@ -357,7 +357,7 @@ const getPublicProductById = async (productId) => {
  * Admin-created products are automatically approved.
  */
 const adminCreateProduct = async (user, data) => {
-  ensureRole(user, [USER_ROLE.ADMIN]);
+  ensureRole(user, [ROLES.ADMIN]);
 
   const sellerType = data.sellerType;
   const sellerId = data.sellerId;
@@ -389,7 +389,7 @@ const adminCreateProduct = async (user, data) => {
  * Get products from the Admin dashboard.
  */
 const getAdminProducts = async (user, filters = {}) => {
-  ensureRole(user, [USER_ROLE.ADMIN]);
+  ensureRole(user, [ROLES.ADMIN]);
 
   const query = {};
 
@@ -416,7 +416,7 @@ const getAdminProducts = async (user, filters = {}) => {
  * Get any product for Admin.
  */
 const getAdminProductById = async (user, productId) => {
-  ensureRole(user, [USER_ROLE.ADMIN]);
+  ensureRole(user, [ROLES.ADMIN]);
 
   const productObjectId = validateObjectId(productId, "product ID");
 
@@ -433,7 +433,7 @@ const getAdminProductById = async (user, productId) => {
  * Update any product as Admin.
  */
 const adminUpdateProduct = async (user, productId, data) => {
-  ensureRole(user, [USER_ROLE.ADMIN]);
+  ensureRole(user, [ROLES.ADMIN]);
 
   const productObjectId = validateObjectId(productId, "product ID");
 
@@ -486,7 +486,7 @@ const adminUpdateProduct = async (user, productId, data) => {
  * Delete any product as Admin.
  */
 const adminDeleteProduct = async (user, productId) => {
-  ensureRole(user, [USER_ROLE.ADMIN]);
+  ensureRole(user, [ROLES.ADMIN]);
 
   const productObjectId = validateObjectId(productId, "product ID");
 
@@ -507,7 +507,7 @@ const adminDeleteProduct = async (user, productId) => {
  * Get products waiting for Admin approval.
  */
 const getPendingProducts = async (user) => {
-  ensureRole(user, [USER_ROLE.ADMIN]);
+  ensureRole(user, [ROLES.ADMIN]);
 
   return Product.find({
     status: PRODUCT_STATUS.PENDING_APPROVAL,
@@ -521,7 +521,7 @@ const getPendingProducts = async (user) => {
  * Approve a pending product.
  */
 const approveProduct = async (user, productId) => {
-  ensureRole(user, [USER_ROLE.ADMIN]);
+  ensureRole(user, [ROLES.ADMIN]);
 
   const productObjectId = validateObjectId(productId, "product ID");
 
@@ -557,7 +557,7 @@ const approveProduct = async (user, productId) => {
  * Reject a pending product.
  */
 const rejectProduct = async (user, productId, rejectionReason) => {
-  ensureRole(user, [USER_ROLE.ADMIN]);
+  ensureRole(user, [ROLES.ADMIN]);
 
   const productObjectId = validateObjectId(productId, "product ID");
 

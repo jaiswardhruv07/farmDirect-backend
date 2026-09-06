@@ -22,6 +22,8 @@ const adminOrderRoutes = require("./routes/admin.order.routes");
 
 const dashboardRoutes = require("./routes/dashboard.routes");
 
+const forecastRoutes = require("./routes/forecast.routes");
+
 const env = require("./config/env");
 const { API_PREFIX, APP_NAME } = require("./config/constants");
 
@@ -33,7 +35,15 @@ const app = express();
 |--------------------------------------------------------------------------
 */
 
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        "upgrade-insecure-requests": null
+      }
+    }
+  })
+);
 
 app.use(
   cors({
@@ -197,6 +207,12 @@ app.use("/api/admin/orders", adminOrderRoutes);
 |--------------------------------------------------------------------------
 */
 app.use("/api/dashboard", dashboardRoutes);
+/*
+|--------------------------------------------------------------------------
+| AI Forecast API Handler
+|--------------------------------------------------------------------------
+*/
+app.use("/api/forecast", forecastRoutes);
 
 /*
 |--------------------------------------------------------------------------
