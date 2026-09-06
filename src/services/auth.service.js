@@ -94,6 +94,19 @@ const registerUser = async ({
     status: USER_STATUS.ACTIVE
   });
 
+  /*
+  |--------------------------------------------------------------------------
+  | Generate JWT before any population of roleId
+  |--------------------------------------------------------------------------
+  |
+  | At this point:
+  | user.roleId = ObjectId
+  |
+  | Therefore generateAccessToken() creates a small JWT containing
+  | only the user ID and role ID.
+  |
+  */
+
   const token = generateAccessToken(user);
 
   return {
@@ -208,9 +221,49 @@ const loginUser = async ({ email, password }) => {
     throw error;
   }
 
+  /*
+  |--------------------------------------------------------------------------
+  | Update last login
+  |--------------------------------------------------------------------------
+  */
+
   user.lastLoginAt = new Date();
 
   await user.save();
+
+  /*
+  |--------------------------------------------------------------------------
+  | Generate JWT BEFORE populating roleId
+  |--------------------------------------------------------------------------
+  |
+  | IMPORTANT:
+  |
+  | At this point user.roleId is still an ObjectId:
+  |
+  | user.roleId = ObjectId("...")
+  |
+  | generateAccessToken() will therefore produce:
+  |
+  | {
+  |   sub: "...",
+  |   roleId: "..."
+  | }
+  |
+  | instead of serializing the entire Role document.
+  |
+  */
+
+  const token = generateAccessToken(user);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Populate role and permissions for login response
+  |--------------------------------------------------------------------------
+  |
+  | This is ONLY for returning user permissions to the client.
+  | These permissions are NOT placed inside the JWT.
+  |
+  */
 
   await user.populate({
     path: "roleId",
@@ -218,8 +271,6 @@ const loginUser = async ({ email, password }) => {
       path: "permissionIds"
     }
   });
-
-  const token = generateAccessToken(user);
 
   return {
     user: {
@@ -231,6 +282,7 @@ const loginUser = async ({ email, password }) => {
       roleId: user.roleId._id,
       role: user.roleId.name,
       status: user.status,
+
       permissions: user.roleId.permissionIds.map(
         (permission) => permission.name
       )
