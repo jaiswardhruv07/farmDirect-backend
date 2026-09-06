@@ -15,7 +15,7 @@ const options = {
 
     servers: [
       {
-        url: `http://localhost:${env.PORT}`,
+        url: `http://34.180.55.18`,
         description: "Local development server"
       }
     ],
@@ -59,7 +59,11 @@ const options = {
       },
       {
         name: "AI",
-        description: "Demand forecasting and AI-related operations"
+        description: "AI and machine learning related operations"
+      },
+      {
+        name: "Forecast",
+        description: "Demand forecasting and forecast retrieval operations"
       },
       {
         name: "Dashboard",
