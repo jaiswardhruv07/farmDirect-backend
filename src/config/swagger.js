@@ -17,6 +17,10 @@ const options = {
       {
         url: `http://localhost:5000`,
         description: "Local development server"
+      },
+      {
+        url: "http://34.180.55.18",
+        description: "GCP VM Production server"
       }
     ],
 
