@@ -54,12 +54,10 @@ const inventorySchema = new mongoose.Schema(
 /*
  * Reserved stock must never exceed total stock.
  */
-inventorySchema.pre("validate", function (next) {
+inventorySchema.pre("validate", function () {
   if (this.reservedStock > this.totalStock) {
-    return next(new Error("Reserved stock cannot exceed total stock"));
+    throw new Error("Reserved stock cannot exceed total stock");
   }
-
-  next();
 });
 
 /*
