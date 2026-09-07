@@ -15,7 +15,7 @@ const options = {
 
     servers: [
       {
-        url: `http://34.180.55.18`,
+        url: `http://localhost:5000`,
         description: "Local development server"
       }
     ],
@@ -439,9 +439,21 @@ const options = {
         FarmerLocation: {
           type: "object",
 
-          required: ["district", "state", "pincode"],
+          required: ["addressLine1", "district", "state", "pincode"],
 
           properties: {
+            addressLine1: {
+              type: "string",
+              maxLength: 200,
+              example: "123 Main Road"
+            },
+
+            addressLine2: {
+              type: "string",
+              maxLength: 200,
+              example: "Near Wakad Bridge"
+            },
+
             village: {
               type: "string",
               maxLength: 100,
@@ -470,10 +482,6 @@ const options = {
               type: "string",
               pattern: "^[1-9][0-9]{5}$",
               example: "411057"
-            },
-
-            coordinates: {
-              $ref: "#/components/schemas/GeoPoint"
             }
           }
         },
@@ -512,6 +520,10 @@ const options = {
 
             location: {
               $ref: "#/components/schemas/FarmerLocation"
+            },
+
+            coordinates: {
+              $ref: "#/components/schemas/GeoPoint"
             },
 
             bankDetails: {
