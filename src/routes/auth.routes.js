@@ -75,6 +75,18 @@ router.post("/register", validate(registerSchema), register);
  */
 router.post("/login", validate(loginSchema), login);
 
+/**
+ * @swagger
+ * /api/auth/roles:
+ *   get:
+ *     summary: Get public registration roles
+ *     description: Returns the Farmer and Consumer roles available for public registration.
+ *     tags:
+ *       - Authentication
+ *     responses:
+ *       200:
+ *         description: Public roles returned successfully
+ */
 router.get("/roles", getRoles);
 
 /*

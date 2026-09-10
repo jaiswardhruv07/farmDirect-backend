@@ -83,6 +83,37 @@ const getAdminOrders = async (req, res, next) => {
   }
 };
 
+const getSellerOrders = async (req, res, next) => {
+  try {
+    const result = await orderService.getSellerOrders(req.user, req.query);
+
+    return res.status(200).json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateSellerOrderStatus = async (req, res, next) => {
+  try {
+    const order = await orderService.updateSellerOrderStatus(
+      req.user,
+      req.params.id,
+      req.body.status
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Seller order status updated successfully",
+      data: order
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getAdminOrderById = async (req, res, next) => {
   try {
     const order = await orderService.getAdminOrderById(req.params.id);
@@ -139,6 +170,8 @@ module.exports = {
   cancelMyOrder,
 
   getAdminOrders,
+  getSellerOrders,
+  updateSellerOrderStatus,
   getAdminOrderById,
   updateOrderStatus,
   cancelAdminOrder

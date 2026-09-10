@@ -10,7 +10,8 @@ const { ROLES } = require("../config/constants");
 
 const {
   createOrderSchema,
-  cancelOrderSchema
+  cancelOrderSchema,
+  sellerStatusUpdateSchema
 } = require("../schemas/order.schema");
 
 const orderController = require("../controllers/order.controller");
@@ -156,6 +157,81 @@ router.patch(
   requireRole(ROLES.CONSUMER, ROLES.BULK_BUYER),
   validate(cancelOrderSchema),
   orderController.cancelMyOrder
+);
+
+/**
+ * @swagger
+ * /api/orders/seller:
+ *   get:
+ *     summary: Get orders containing the seller's products
+ *     tags:
+ *       - Orders
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Seller orders retrieved successfully
+ *       401:
+ *         description: Authentication required
+ *       403:
+ *         description: Farmer or FPO role required
+ */
+router.get(
+  "/seller",
+  authenticate,
+  requireRole(ROLES.FARMER, ROLES.FPO),
+  orderController.getSellerOrders
+);
+
+/**
+ * @swagger
+ * /api/orders/seller/{id}/status:
+ *   patch:
+ *     summary: Update a seller order status
+ *     tags:
+ *       - Orders
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - status
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum:
+ *                   - CONFIRMED
+ *                   - PROCESSING
+ *                   - READY_FOR_DISPATCH
+ *                   - SHIPPED
+ *     responses:
+ *       200:
+ *         description: Seller order status updated successfully
+ *       400:
+ *         description: Invalid status transition
+ *       401:
+ *         description: Authentication required
+ *       403:
+ *         description: Farmer or FPO role required
+ *       404:
+ *         description: Seller order not found
+ */
+router.patch(
+  "/seller/:id/status",
+  authenticate,
+  requireRole(ROLES.FARMER, ROLES.FPO),
+  validate(sellerStatusUpdateSchema),
+  orderController.updateSellerOrderStatus
 );
 
 module.exports = router;

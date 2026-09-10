@@ -2,6 +2,8 @@ const mongoose = require("mongoose");
 
 const Order = require("../models/Order");
 const Product = require("../models/Product");
+const FarmerProfile = require("../models/FarmerProfile");
+const FpoProfile = require("../models/FpoProfile");
 
 const { ORDER_STATUS, BUYER_TYPE } = require("../enums/order.enum");
 
@@ -61,6 +63,26 @@ const ensureAdmin = (user) => {
       403
     );
   }
+};
+
+const ensureSeller = (user) => {
+  const role = getUserRole(user);
+
+  if (![ROLES.FARMER, ROLES.FPO].includes(role)) {
+    throw createServiceError("Only farmers and FPOs can manage seller orders", 403);
+  }
+};
+
+const getSellerProfileId = async (user) => {
+  const role = getUserRole(user);
+  const Profile = role === ROLES.FPO ? FpoProfile : FarmerProfile;
+  const profile = await Profile.findOne({ userId: user._id }).select("_id");
+
+  if (!profile) {
+    throw createServiceError("Seller profile not found", 404);
+  }
+
+  return profile._id;
 };
 
 const mapBuyerType = (role) => {
@@ -186,19 +208,43 @@ const createOrder = async (user, payload) => {
   }
 
   const session = await mongoose.startSession();
+  let transactionStarted = false;
+  let sessionEnded = false;
 
   try {
-    session.startTransaction();
+    const client = mongoose.connection.getClient();
+    const topologyType =
+      client && client.topology && client.topology.description
+        ? client.topology.description.type
+        : null;
+    const supportsTransactions = topologyType && topologyType !== "Single";
+
+    if (supportsTransactions) {
+      session.startTransaction();
+      transactionStarted = true;
+    } else {
+      console.warn(
+        "MongoDB transactions are unavailable; creating the order without a transaction"
+      );
+      await session.endSession();
+      sessionEnded = true;
+    }
 
     /*
      * Fetch all products in one query.
      * Product information is read from the database rather than
      * trusted from the client request.
      */
-    const products = await Product.find({
+    const productsQuery = Product.find({
       _id: { $in: productIds },
       status: PRODUCT_STATUS.ACTIVE
-    }).session(session);
+    });
+
+    if (transactionStarted) {
+      productsQuery.session(session);
+    }
+
+    const products = await productsQuery;
 
     if (products.length !== productIds.length) {
       throw createServiceError(
@@ -249,7 +295,11 @@ const createOrder = async (user, payload) => {
        * reserveStock() must receive the transaction session so
        * inventory reservation and order creation are atomic.
        */
-      await reserveStock(product._id, quantity, session);
+      await reserveStock(
+        product._id,
+        quantity,
+        transactionStarted ? session : null
+      );
 
       const subtotal = calculateSubtotal(product.pricePerUnit, quantity);
 
@@ -293,16 +343,28 @@ const createOrder = async (user, payload) => {
       paymentStatus: "PENDING"
     });
 
-    await order.save({ session });
+    if (transactionStarted) {
+      await order.save({ session });
+    } else {
+      await order.save();
+    }
 
-    await session.commitTransaction();
+    if (transactionStarted) {
+      await session.commitTransaction();
+    }
 
     return await Order.findById(order._id);
   } catch (error) {
-    await session.abortTransaction();
+    if (transactionStarted) {
+      await session.abortTransaction();
+    }
     throw error;
   } finally {
-    await session.endSession();
+    if (transactionStarted) {
+      await session.endSession();
+    } else if (!sessionEnded) {
+      await session.endSession();
+    }
   }
 };
 
@@ -396,9 +458,23 @@ const cancelOrder = async (user, orderId, reason = null) => {
   validateObjectId(orderId, "order ID");
 
   const session = await mongoose.startSession();
+  let transactionStarted = false;
+  let sessionEnded = false;
 
   try {
-    session.startTransaction();
+    const client = mongoose.connection.getClient();
+    const topologyType =
+      client && client.topology && client.topology.description
+        ? client.topology.description.type
+        : null;
+    transactionStarted = Boolean(topologyType && topologyType !== "Single");
+
+    if (transactionStarted) {
+      session.startTransaction();
+    } else {
+      await session.endSession();
+      sessionEnded = true;
+    }
 
     const query = {
       _id: orderId
@@ -412,7 +488,11 @@ const cancelOrder = async (user, orderId, reason = null) => {
       query.buyerId = user._id;
     }
 
-    const order = await Order.findOne(query).session(session);
+    const orderQuery = Order.findOne(query);
+    if (transactionStarted) {
+      orderQuery.session(session);
+    }
+    const order = await orderQuery;
 
     if (!order) {
       throw createServiceError("Order not found", 404);
@@ -435,7 +515,11 @@ const cancelOrder = async (user, orderId, reason = null) => {
      * Release every reserved inventory item.
      */
     for (const item of order.items) {
-      await releaseReservedStock(item.productId, item.quantity, session);
+      await releaseReservedStock(
+        item.productId,
+        item.quantity,
+        transactionStarted ? session : null
+      );
     }
 
     order.status = ORDER_STATUS.CANCELLED;
@@ -446,16 +530,26 @@ const cancelOrder = async (user, orderId, reason = null) => {
       reason: reason || null
     };
 
-    await order.save({ session });
+    if (transactionStarted) {
+      await order.save({ session });
+    } else {
+      await order.save();
+    }
 
-    await session.commitTransaction();
+    if (transactionStarted) {
+      await session.commitTransaction();
+    }
 
     return order;
   } catch (error) {
-    await session.abortTransaction();
+    if (transactionStarted) {
+      await session.abortTransaction();
+    }
     throw error;
   } finally {
-    await session.endSession();
+    if (transactionStarted || !sessionEnded) {
+      await session.endSession();
+    }
   }
 };
 
@@ -502,6 +596,73 @@ const getAdminOrders = async (filters = {}) => {
       totalPages: Math.ceil(total / limit)
     }
   };
+
+};
+
+const getSellerOrders = async (user, filters = {}) => {
+  ensureSeller(user);
+
+  const sellerId = await getSellerProfileId(user);
+  const query = { "items.sellerId": sellerId };
+
+  if (filters.status) {
+    if (!Object.values(ORDER_STATUS).includes(filters.status)) {
+      throw createServiceError("Invalid order status", 400);
+    }
+
+    query.status = filters.status;
+  }
+
+  const page = Math.max(Number(filters.page) || 1, 1);
+  const limit = Math.min(Math.max(Number(filters.limit) || 10, 1), 100);
+  const skip = (page - 1) * limit;
+
+  const [orders, total] = await Promise.all([
+    Order.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),
+    Order.countDocuments(query)
+  ]);
+
+  return {
+    orders,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit)
+    }
+  };
+};
+
+const updateSellerOrderStatus = async (user, orderId, newStatus) => {
+  ensureSeller(user);
+  validateObjectId(orderId, "order ID");
+  const sellerId = await getSellerProfileId(user);
+
+  if (
+    ![
+      ORDER_STATUS.CONFIRMED,
+      ORDER_STATUS.PROCESSING,
+      ORDER_STATUS.READY_FOR_DISPATCH,
+      ORDER_STATUS.SHIPPED
+    ].includes(newStatus)
+  ) {
+    throw createServiceError("Invalid seller order status", 400);
+  }
+
+  const order = await Order.findOne({
+    _id: orderId,
+    "items.sellerId": sellerId
+  });
+
+  if (!order) {
+    throw createServiceError("Seller order not found", 404);
+  }
+
+  ensureValidStatusTransition(order.status, newStatus);
+  order.status = newStatus;
+  await order.save();
+
+  return order;
 };
 
 /*
@@ -538,11 +699,29 @@ const updateOrderStatus = async (user, orderId, newStatus) => {
   }
 
   const session = await mongoose.startSession();
+  let transactionStarted = false;
+  let sessionEnded = false;
 
   try {
-    session.startTransaction();
+    const client = mongoose.connection.getClient();
+    const topologyType =
+      client && client.topology && client.topology.description
+        ? client.topology.description.type
+        : null;
+    transactionStarted = Boolean(topologyType && topologyType !== "Single");
 
-    const order = await Order.findById(orderId).session(session);
+    if (transactionStarted) {
+      session.startTransaction();
+    } else {
+      await session.endSession();
+      sessionEnded = true;
+    }
+
+    const orderQuery = Order.findById(orderId);
+    if (transactionStarted) {
+      orderQuery.session(session);
+    }
+    const order = await orderQuery;
 
     if (!order) {
       throw createServiceError("Order not found", 404);
@@ -556,7 +735,11 @@ const updateOrderStatus = async (user, orderId, newStatus) => {
      */
     if (newStatus === ORDER_STATUS.DELIVERED) {
       for (const item of order.items) {
-        await consumeReservedStock(item.productId, item.quantity, session);
+        await consumeReservedStock(
+          item.productId,
+          item.quantity,
+          transactionStarted ? session : null
+        );
       }
     }
 
@@ -566,22 +749,36 @@ const updateOrderStatus = async (user, orderId, newStatus) => {
      */
     if (newStatus === ORDER_STATUS.FAILED) {
       for (const item of order.items) {
-        await releaseReservedStock(item.productId, item.quantity, session);
+        await releaseReservedStock(
+          item.productId,
+          item.quantity,
+          transactionStarted ? session : null
+        );
       }
     }
 
     order.status = newStatus;
 
-    await order.save({ session });
+    if (transactionStarted) {
+      await order.save({ session });
+    } else {
+      await order.save();
+    }
 
-    await session.commitTransaction();
+    if (transactionStarted) {
+      await session.commitTransaction();
+    }
 
     return order;
   } catch (error) {
-    await session.abortTransaction();
+    if (transactionStarted) {
+      await session.abortTransaction();
+    }
     throw error;
   } finally {
-    await session.endSession();
+    if (transactionStarted || !sessionEnded) {
+      await session.endSession();
+    }
   }
 };
 
@@ -596,5 +793,7 @@ module.exports = {
   getAdminOrders,
   getAdminOrderById,
 
-  updateOrderStatus
+  updateOrderStatus,
+  getSellerOrders,
+  updateSellerOrderStatus
 };
