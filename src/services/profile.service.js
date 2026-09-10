@@ -1,3 +1,7 @@
+const mongoose = require("mongoose");
+
+const { PROFILE_VERIFICATION_STATUS } = require("../enums/profile.enum");
+
 const FarmerProfile = require("../models/FarmerProfile");
 const BuyerProfile = require("../models/BuyerProfile");
 const FpoProfile = require("../models/FpoProfile");
@@ -681,7 +685,355 @@ const updateMyGovernmentProfile = async (user, data) => {
 
   return profile;
 };
+/*
+|--------------------------------------------------------------------------
+| Admin Profile Verification
+|--------------------------------------------------------------------------
+*/
 
+/*
+|--------------------------------------------------------------------------
+| Supported Admin Profile Types
+|--------------------------------------------------------------------------
+|
+| These are the profile types that require admin verification.
+|
+| Logistics is intentionally excluded because the current requirement
+| only includes:
+|
+| - FARMER
+| - BULK_BUYER
+| - FPO
+| - GOVERNMENT_OFFICER
+|
+|--------------------------------------------------------------------------
+*/
+
+const ADMIN_PROFILE_MODELS = {
+  farmer: {
+    Model: FarmerProfile
+  },
+
+  "bulk-buyer": {
+    Model: BuyerProfile
+  },
+
+  fpo: {
+    Model: FpoProfile
+  },
+
+  government: {
+    Model: GovernmentProfile
+  }
+};
+
+/**
+ * Get all pending profiles.
+ *
+ * Only ADMIN users can perform this operation.
+ *
+ * Returns pending:
+ * - Farmer profiles
+ * - Bulk buyer profiles
+ * - FPO profiles
+ * - Government officer profiles
+ */
+const getPendingProfiles = async (user) => {
+  await ensureAdmin(user);
+
+  const profileQueries = Object.entries(ADMIN_PROFILE_MODELS).map(
+    async ([profileType, config]) => {
+      const profiles = await config.Model.find({
+        "verification.status": PROFILE_VERIFICATION_STATUS.PENDING
+      })
+        .populate({
+          path: "userId",
+          select: "firstName lastName email phone roleId"
+        })
+        .sort({ createdAt: -1 })
+        .lean();
+
+      return profiles.map((profile) => ({
+        profileType,
+        profile
+      }));
+    }
+  );
+
+  const results = await Promise.all(profileQueries);
+
+  return results.flat();
+};
+
+/**
+ * Approve a pending profile.
+ *
+ * Only ADMIN users can perform this operation.
+ *
+ * The operation is atomic:
+ * the profile is updated only when its current verification
+ * status is PENDING.
+ */
+const approveProfile = async (user, profileType, profileId) => {
+  await ensureAdmin(user);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Validate profile ID
+  |--------------------------------------------------------------------------
+  */
+
+  if (!mongoose.Types.ObjectId.isValid(profileId)) {
+    const error = new Error("Invalid profile ID");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Validate profile type
+  |--------------------------------------------------------------------------
+  */
+
+  const config = ADMIN_PROFILE_MODELS[profileType];
+
+  if (!config) {
+    const error = new Error(
+      "Invalid profile type. Supported types are farmer, bulk-buyer, fpo and government"
+    );
+
+    error.statusCode = 400;
+
+    throw error;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Approve only PENDING profiles
+  |--------------------------------------------------------------------------
+  |
+  | This condition is important.
+  |
+  | If two admins attempt to approve the same profile at the same time,
+  | only one of them will successfully update the document.
+  |
+  |--------------------------------------------------------------------------
+  */
+
+  const profile = await config.Model.findOneAndUpdate(
+    {
+      _id: profileId,
+      "verification.status": PROFILE_VERIFICATION_STATUS.PENDING
+    },
+    {
+      $set: {
+        "verification.status": PROFILE_VERIFICATION_STATUS.VERIFIED,
+        "verification.verifiedBy": user._id,
+        "verification.verifiedAt": new Date()
+      },
+
+      $unset: {
+        "verification.rejectionReason": 1
+      }
+    },
+    {
+      new: true,
+      runValidators: true
+    }
+  ).populate({
+    path: "userId",
+    select: "firstName lastName email phone roleId"
+  });
+
+  /*
+  |--------------------------------------------------------------------------
+  | Profile not updated
+  |--------------------------------------------------------------------------
+  */
+
+  if (!profile) {
+    const existingProfile = await config.Model.findById(profileId)
+      .select("verification.status")
+      .lean();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Profile doesn't exist
+    |--------------------------------------------------------------------------
+    */
+
+    if (!existingProfile) {
+      const error = new Error("Profile not found");
+      error.statusCode = 404;
+
+      throw error;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Profile exists but is not pending
+    |--------------------------------------------------------------------------
+    */
+
+    const currentStatus = existingProfile.verification?.status || "UNKNOWN";
+
+    const error = new Error(
+      `Profile cannot be approved because its current verification status is ${currentStatus}`
+    );
+
+    error.statusCode = 409;
+
+    throw error;
+  }
+
+  return {
+    profileType,
+    profile
+  };
+};
+
+/**
+ * Reject a pending profile.
+ *
+ * Only ADMIN users can perform this operation.
+ *
+ * A rejection reason is mandatory.
+ *
+ * The operation is atomic:
+ * the profile is updated only when its current verification
+ * status is PENDING.
+ */
+const rejectProfile = async (user, profileType, profileId, rejectionReason) => {
+  await ensureAdmin(user);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Validate profile ID
+  |--------------------------------------------------------------------------
+  */
+
+  if (!mongoose.Types.ObjectId.isValid(profileId)) {
+    const error = new Error("Invalid profile ID");
+    error.statusCode = 400;
+
+    throw error;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Validate profile type
+  |--------------------------------------------------------------------------
+  */
+
+  const config = ADMIN_PROFILE_MODELS[profileType];
+
+  if (!config) {
+    const error = new Error(
+      "Invalid profile type. Supported types are farmer, bulk-buyer, fpo and government"
+    );
+
+    error.statusCode = 400;
+
+    throw error;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Validate rejection reason
+  |--------------------------------------------------------------------------
+  */
+
+  if (typeof rejectionReason !== "string" || !rejectionReason.trim()) {
+    const error = new Error("Rejection reason is required");
+    error.statusCode = 400;
+
+    throw error;
+  }
+
+  const trimmedReason = rejectionReason.trim();
+
+  if (trimmedReason.length > 500) {
+    const error = new Error("Rejection reason cannot exceed 500 characters");
+
+    error.statusCode = 400;
+
+    throw error;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Reject only PENDING profiles
+  |--------------------------------------------------------------------------
+  */
+
+  const profile = await config.Model.findOneAndUpdate(
+    {
+      _id: profileId,
+      "verification.status": PROFILE_VERIFICATION_STATUS.PENDING
+    },
+    {
+      $set: {
+        "verification.status": PROFILE_VERIFICATION_STATUS.REJECTED,
+        "verification.verifiedBy": user._id,
+        "verification.verifiedAt": new Date(),
+        "verification.rejectionReason": trimmedReason
+      }
+    },
+    {
+      new: true,
+      runValidators: true
+    }
+  ).populate({
+    path: "userId",
+    select: "firstName lastName email phone roleId"
+  });
+
+  /*
+  |--------------------------------------------------------------------------
+  | Profile not updated
+  |--------------------------------------------------------------------------
+  */
+
+  if (!profile) {
+    const existingProfile = await config.Model.findById(profileId)
+      .select("verification.status")
+      .lean();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Profile doesn't exist
+    |--------------------------------------------------------------------------
+    */
+
+    if (!existingProfile) {
+      const error = new Error("Profile not found");
+      error.statusCode = 404;
+
+      throw error;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Profile exists but is not pending
+    |--------------------------------------------------------------------------
+    */
+
+    const currentStatus = existingProfile.verification?.status || "UNKNOWN";
+
+    const error = new Error(
+      `Profile cannot be rejected because its current verification status is ${currentStatus}`
+    );
+
+    error.statusCode = 409;
+
+    throw error;
+  }
+
+  return {
+    profileType,
+    profile
+  };
+};
 /*
 |--------------------------------------------------------------------------
 | Exports
@@ -712,5 +1064,10 @@ module.exports = {
   // Government
   createGovernmentProfile,
   getMyGovernmentProfile,
-  updateMyGovernmentProfile
+  updateMyGovernmentProfile,
+
+  // Admin Profile Verification
+  getPendingProfiles,
+  approveProfile,
+  rejectProfile
 };
