@@ -291,8 +291,20 @@ const loginUser = async ({ email, password }) => {
   };
 };
 
+const getPublicRoles = async () => {
+  return Role.find({
+    name: {
+      $in: [ROLES.FARMER, ROLES.CONSUMER]
+    }
+  })
+    .select("_id name")
+    .sort({ name: 1 })
+    .lean();
+};
+
 module.exports = {
   registerUser,
   adminCreateUser,
-  loginUser
+  loginUser,
+  getPublicRoles
 };

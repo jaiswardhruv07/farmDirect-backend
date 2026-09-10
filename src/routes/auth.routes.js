@@ -3,6 +3,7 @@ const express = require("express");
 const {
   register,
   login,
+  getRoles,
   getCurrentUser
 } = require("../controllers/auth.controller");
 
@@ -73,6 +74,8 @@ router.post("/register", validate(registerSchema), register);
  *         description: User account is not active
  */
 router.post("/login", validate(loginSchema), login);
+
+router.get("/roles", getRoles);
 
 /*
 |--------------------------------------------------------------------------
