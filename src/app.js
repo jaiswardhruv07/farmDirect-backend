@@ -9,6 +9,7 @@ const swaggerSpec = require("./config/swagger");
 
 const authRoutes = require("./routes/auth.routes");
 const adminRoutes = require("./routes/admin.routes");
+const adminProfileRoutes = require("./routes/admin.profile.routes");
 const profileRoutes = require("./routes/profile.routes");
 
 const productRoutes = require("./routes/product.routes");
@@ -173,6 +174,7 @@ app.get("/", (req, res) => {
 
 app.use(`${API_PREFIX}/auth`, authRoutes);
 app.use(`${API_PREFIX}/admin`, adminRoutes);
+app.use(`${API_PREFIX}/admin/profiles`, adminProfileRoutes);
 
 /*
 |--------------------------------------------------------------------------

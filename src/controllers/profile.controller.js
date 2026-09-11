@@ -26,7 +26,12 @@ const {
   // Government
   createGovernmentProfile,
   getMyGovernmentProfile,
-  updateMyGovernmentProfile
+  updateMyGovernmentProfile,
+
+  // Admin
+  getPendingProfiles,
+  approveProfile,
+  rejectProfile
 } = require("../services/profile.service");
 
 const getPendingAdminProfiles = async (req, res, next) => {
@@ -352,6 +357,67 @@ const updateGovernmentProfile = async (req, res, next) => {
 
 /*
 |--------------------------------------------------------------------------
+| Admin Profile Verification
+|--------------------------------------------------------------------------
+*/
+
+const getPendingProfilesController = async (req, res, next) => {
+  try {
+    const profiles = await getPendingProfiles(req.user);
+
+    res.status(200).json({
+      success: true,
+      message: "Pending profiles retrieved successfully",
+      data: {
+        profiles,
+        count: profiles.length
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const approveProfileController = async (req, res, next) => {
+  try {
+    const { profileType, profileId } = req.params;
+
+    const result = await approveProfile(req.user, profileType, profileId);
+
+    res.status(200).json({
+      success: true,
+      message: "Profile approved successfully",
+      data: result
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const rejectProfileController = async (req, res, next) => {
+  try {
+    const { profileType, profileId } = req.params;
+    const { rejectionReason } = req.body;
+
+    const result = await rejectProfile(
+      req.user,
+      profileType,
+      profileId,
+      rejectionReason
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Profile rejected successfully",
+      data: result
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/*
+|--------------------------------------------------------------------------
 | Exports
 |--------------------------------------------------------------------------
 */
@@ -384,5 +450,10 @@ module.exports = {
   // Government
   createGovernment,
   getGovernmentProfile,
-  updateGovernmentProfile
+  updateGovernmentProfile,
+
+  // Admin
+  getPendingProfilesController,
+  approveProfileController,
+  rejectProfileController
 };
