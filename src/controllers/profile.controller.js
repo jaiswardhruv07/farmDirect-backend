@@ -1,4 +1,8 @@
 const {
+  getPendingProfiles,
+  approveProfile,
+  rejectProfile,
+
   // Farmer
   createFarmerProfile,
   getMyFarmerProfile,
@@ -24,6 +28,57 @@ const {
   getMyGovernmentProfile,
   updateMyGovernmentProfile
 } = require("../services/profile.service");
+
+const getPendingAdminProfiles = async (req, res, next) => {
+  try {
+    const profiles = await getPendingProfiles(req.user);
+
+    res.status(200).json({
+      success: true,
+      message: "Pending profiles retrieved successfully",
+      data: { profiles }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const approveAdminProfile = async (req, res, next) => {
+  try {
+    const profile = await approveProfile(
+      req.user,
+      req.params.profileType,
+      req.params.profileId
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Profile approved successfully",
+      data: { profile }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const rejectAdminProfile = async (req, res, next) => {
+  try {
+    const profile = await rejectProfile(
+      req.user,
+      req.params.profileType,
+      req.params.profileId,
+      req.body.rejectionReason
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Profile rejected successfully",
+      data: { profile }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 /*
 |--------------------------------------------------------------------------
@@ -302,6 +357,10 @@ const updateGovernmentProfile = async (req, res, next) => {
 */
 
 module.exports = {
+  getPendingAdminProfiles,
+  approveAdminProfile,
+  rejectAdminProfile,
+
   // Farmer
   createFarmer,
   getFarmerProfile,
