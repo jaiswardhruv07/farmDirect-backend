@@ -26,12 +26,7 @@ const {
   // Government
   createGovernmentProfile,
   getMyGovernmentProfile,
-  updateMyGovernmentProfile,
-
-  // Admin
-  getPendingProfiles,
-  approveProfile,
-  rejectProfile
+  updateMyGovernmentProfile
 } = require("../services/profile.service");
 
 const getPendingAdminProfiles = async (req, res, next) => {
