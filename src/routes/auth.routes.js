@@ -3,6 +3,7 @@ const express = require("express");
 const {
   register,
   login,
+  getRoles,
   getCurrentUser
 } = require("../controllers/auth.controller");
 
@@ -73,6 +74,20 @@ router.post("/register", validate(registerSchema), register);
  *         description: User account is not active
  */
 router.post("/login", validate(loginSchema), login);
+
+/**
+ * @swagger
+ * /api/auth/roles:
+ *   get:
+ *     summary: Get public registration roles
+ *     description: Returns the Farmer and Consumer roles available for public registration.
+ *     tags:
+ *       - Authentication
+ *     responses:
+ *       200:
+ *         description: Public roles returned successfully
+ */
+router.get("/roles", getRoles);
 
 /*
 |--------------------------------------------------------------------------

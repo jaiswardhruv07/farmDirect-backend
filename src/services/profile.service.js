@@ -126,6 +126,162 @@ const generateNextCode = async (Model, field, prefix) => {
   return `${prefix}-${String(nextNumber).padStart(6, "0")}`;
 };
 
+const ADMIN_PROFILE_MODELS = {
+  farmer: FarmerProfile,
+  "bulk-buyer": BuyerProfile,
+  fpo: FpoProfile,
+  government: GovernmentProfile
+};
+
+const getAdminProfileModel = (profileType) => {
+  const Model = ADMIN_PROFILE_MODELS[profileType];
+
+  if (!Model) {
+    const error = new Error(
+      "Profile type must be farmer, bulk-buyer, fpo, or government"
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return Model;
+};
+
+const validateProfileId = (profileId) => {
+  if (!mongoose.isValidObjectId(profileId)) {
+    const error = new Error("Invalid profile ID");
+    error.statusCode = 400;
+    throw error;
+  }
+};
+
+const getPendingProfiles = async (user) => {
+  await ensureAdmin(user);
+
+  const pendingProfiles = [];
+
+  for (const [profileType, Model] of Object.entries(ADMIN_PROFILE_MODELS)) {
+    const profiles = await Model.find({
+      $or: [
+        { "verification.status": "PENDING" },
+        { "verification.status": { $exists: false } }
+      ]
+    })
+      .populate("userId", "firstName lastName email phone")
+      .lean();
+
+    pendingProfiles.push(
+      ...profiles.map((profile) => ({
+        ...profile,
+        profileType
+      }))
+    );
+  }
+
+  return pendingProfiles.sort(
+    (left, right) => right.createdAt.getTime() - left.createdAt.getTime()
+  );
+};
+
+const approveProfile = async (user, profileType, profileId) => {
+  await ensureAdmin(user);
+  validateProfileId(profileId);
+
+  const Model = getAdminProfileModel(profileType);
+  const profile = await Model.findOneAndUpdate(
+    {
+      _id: profileId,
+      $or: [
+        { "verification.status": "PENDING" },
+        { "verification.status": { $exists: false } }
+      ]
+    },
+    {
+      $set: {
+        "verification.status": "VERIFIED",
+        "verification.verifiedBy": user._id,
+        "verification.verifiedAt": new Date(),
+        "verification.rejectionReason": undefined
+      }
+    },
+    { new: true, runValidators: true }
+  ).populate("userId", "firstName lastName email phone");
+
+  if (!profile) {
+    const existingProfile = await Model.findById(profileId).select(
+      "verification.status"
+    );
+
+    const error = new Error(
+      existingProfile
+        ? "Profile is already processed and is not pending"
+        : "Profile not found"
+    );
+    error.statusCode = existingProfile ? 409 : 404;
+    throw error;
+  }
+
+  return profile;
+};
+
+const rejectProfile = async (
+  user,
+  profileType,
+  profileId,
+  rejectionReason
+) => {
+  await ensureAdmin(user);
+  validateProfileId(profileId);
+
+  if (
+    typeof rejectionReason !== "string" ||
+    !rejectionReason.trim() ||
+    rejectionReason.trim().length > 500
+  ) {
+    const error = new Error(
+      "A rejection reason is required and must be 500 characters or fewer"
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const Model = getAdminProfileModel(profileType);
+  const profile = await Model.findOneAndUpdate(
+    {
+      _id: profileId,
+      $or: [
+        { "verification.status": "PENDING" },
+        { "verification.status": { $exists: false } }
+      ]
+    },
+    {
+      $set: {
+        "verification.status": "REJECTED",
+        "verification.verifiedBy": user._id,
+        "verification.verifiedAt": new Date(),
+        "verification.rejectionReason": rejectionReason.trim()
+      }
+    },
+    { new: true, runValidators: true }
+  ).populate("userId", "firstName lastName email phone");
+
+  if (!profile) {
+    const existingProfile = await Model.findById(profileId).select(
+      "verification.status"
+    );
+
+    const error = new Error(
+      existingProfile
+        ? "Profile is already processed and is not pending"
+        : "Profile not found"
+    );
+    error.statusCode = existingProfile ? 409 : 404;
+    throw error;
+  }
+
+  return profile;
+};
+
 /*
 |--------------------------------------------------------------------------
 | Farmer Profile
@@ -1041,6 +1197,10 @@ const rejectProfile = async (user, profileType, profileId, rejectionReason) => {
 */
 
 module.exports = {
+  getPendingProfiles,
+  approveProfile,
+  rejectProfile,
+
   // Farmer
   createFarmerProfile,
   getMyFarmerProfile,

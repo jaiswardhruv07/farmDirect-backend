@@ -17,13 +17,14 @@ const orderAddressSchema = Joi.object({
 
   city: Joi.string().trim().max(100).allow("", null).default(null),
 
-  district: Joi.string().trim().max(100).required(),
+  district: Joi.string().trim().max(100).allow("", null).default(null),
 
-  state: Joi.string().trim().max(100).required(),
+  state: Joi.string().trim().max(100).allow("", null).default(null),
 
   pincode: Joi.string()
     .pattern(/^[1-9][0-9]{5}$/)
-    .required()
+    .allow("", null)
+    .default(null)
 }).unknown(false);
 
 const createOrderSchema = Joi.object({
@@ -49,6 +50,17 @@ const adminStatusUpdateSchema = Joi.object({
     .required()
 }).unknown(false);
 
+const sellerStatusUpdateSchema = Joi.object({
+  status: Joi.string()
+    .valid(
+      ORDER_STATUS.CONFIRMED,
+      ORDER_STATUS.PROCESSING,
+      ORDER_STATUS.READY_FOR_DISPATCH,
+      ORDER_STATUS.SHIPPED
+    )
+    .required()
+}).unknown(false);
+
 const adminCancelOrderSchema = Joi.object({
   reason: Joi.string().trim().max(500).allow("", null).default(null)
 }).unknown(false);
@@ -57,5 +69,6 @@ module.exports = {
   createOrderSchema,
   cancelOrderSchema,
   adminStatusUpdateSchema,
+  sellerStatusUpdateSchema,
   adminCancelOrderSchema
 };

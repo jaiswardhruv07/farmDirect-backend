@@ -1,7 +1,8 @@
 const {
   registerUser,
   adminCreateUser,
-  loginUser
+  loginUser,
+  getPublicRoles
 } = require("../services/auth.service");
 
 /*
@@ -66,6 +67,21 @@ const login = async (req, res, next) => {
   }
 };
 
+const getRoles = async (req, res, next) => {
+  try {
+    const roles = await getPublicRoles();
+
+    res.status(200).json({
+      success: true,
+      data: {
+        roles
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 /*
 |--------------------------------------------------------------------------
 | Current User
@@ -95,5 +111,6 @@ module.exports = {
   register,
   createUserByAdmin,
   login,
+  getRoles,
   getCurrentUser
 };

@@ -93,22 +93,22 @@ const orderAddressSchema = new mongoose.Schema(
 
     district: {
       type: String,
-      required: true,
       trim: true,
-      maxlength: 100
+      maxlength: 100,
+      default: null
     },
 
     state: {
       type: String,
-      required: true,
       trim: true,
-      maxlength: 100
+      maxlength: 100,
+      default: null
     },
 
     pincode: {
       type: String,
-      required: true,
-      match: /^[1-9][0-9]{5}$/
+      match: /^[1-9][0-9]{5}$/,
+      default: null
     }
   },
   {
